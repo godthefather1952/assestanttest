@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Assestant Live Test</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#111;color:#eee;margin:0;padding:24px;line-height:1.45}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{margin:0 0 8px}
+  .note{color:#bbb;margin-bottom:24px}
+  .q{background:#1b1b1b;border:1px solid #333;border-radius:14px;padding:18px;margin:14px 0}
+  .meta{font-size:13px;color:#aaa;margin-bottom:8px}
+  input[type=text], textarea{width:100%;box-sizing:border-box;background:#0d0d0d;color:#fff;border:1px solid #444;border-radius:8px;padding:10px;margin-top:10px}
+  textarea{min-height:90px}
+  code,pre{background:#0b0b0b;border-radius:8px}
+  pre{padding:12px;overflow:auto}
+  label{display:block;margin:7px 0}
+  .footer{margin-top:28px;color:#888;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Assestant Live Test</h1>
+  <div class="note">Personal practice page for testing /assestant in a browser. 10 questions, mixed topics, designed to finish in under 10 minutes.</div>
+
+  <div class="q">
+    <div class="meta">1. Math · Difficulty 1/10</div>
+    <strong>Fill in the blank:</strong> 7 + 8 = ___
+    <input type="text" />
+  </div>
+
+  <div class="q">
+    <div class="meta">2. Math · Difficulty 3/10</div>
+    <strong>Fill in the blank:</strong> If 3x = 21, then x = ___
+    <input type="text" />
+  </div>
+
+  <div class="q">
+    <div class="meta">3. Logic · Difficulty 4/10</div>
+    <strong>Which value completes the pattern?</strong><br/>2, 4, 8, 16, ___
+    <label><input type="radio" name="q3"/> 18</label>
+    <label><input type="radio" name="q3"/> 24</label>
+    <label><input type="radio" name="q3"/> 32</label>
+    <label><input type="radio" name="q3"/> 34</label>
+  </div>
+
+  <div class="q">
+    <div class="meta">4. Scenario · Difficulty 5/10</div>
+    <strong>You discover that a teammate accidentally deleted a shared file needed for a deadline in one hour. What would you do first?</strong>
+    <label><input type="radio" name="q4"/> A. Blame the teammate in the group chat</label>
+    <label><input type="radio" name="q4"/> B. Check version history/backups and try to restore the file</label>
+    <label><input type="radio" name="q4"/> C. Start rebuilding from scratch without checking anything</label>
+    <label><input type="radio" name="q4"/> D. Wait and see if someone else fixes it</label>
+  </div>
+
+  <div class="q">
+    <div class="meta">5. Python · Difficulty 5/10</div>
+    <strong>What does this print?</strong>
+    <pre><code>nums = [1, 2, 3]
+print(sum(nums))</code></pre>
+    <input type="text" placeholder="Output" />
+  </div>
+
+  <div class="q">
+    <div class="meta">6. Python · Difficulty 7/10</div>
+    <strong>Write one Python expression that returns the largest value in <code>values</code>.</strong>
+    <textarea placeholder="Your code"></textarea>
+  </div>
+
+  <div class="q">
+    <div class="meta">7. Bash · Difficulty 6/10</div>
+    <strong>Which command lists all files, including hidden files, in long format?</strong>
+    <label><input type="radio" name="q7"/> A. ls</label>
+    <label><input type="radio" name="q7"/> B. ls -l</label>
+    <label><input type="radio" name="q7"/> C. ls -la</label>
+    <label><input type="radio" name="q7"/> D. pwd -la</label>
+  </div>
+
+  <div class="q">
+    <div class="meta">8. Bash · Difficulty 8/10</div>
+    <strong>Fill in the blank to print only lines containing the word "error" from <code>app.log</code>:</strong>
+    <pre><code>_____ "error" app.log</code></pre>
+    <input type="text" />
+  </div>
+
+  <div class="q">
+    <div class="meta">9. Coding · Difficulty 8/10</div>
+    <strong>How would you write a simple function in JavaScript that returns the square of a number?</strong>
+    <textarea placeholder="Your function"></textarea>
+  </div>
+
+  <div class="q">
+    <div class="meta">10. Mixed Scenario + Reasoning · Difficulty 10/10</div>
+    <strong>You are debugging a script that works locally but fails on a Linux server with "Permission denied." Which action is the best first check?</strong>
+    <label><input type="radio" name="q10"/> A. Rewrite the script in another language</label>
+    <label><input type="radio" name="q10"/> B. Check file permissions and whether the script is executable</label>
+    <label><input type="radio" name="q10"/> C. Delete the server logs</label>
+    <label><input type="radio" name="q10"/> D. Reinstall the operating system</label>
+  </div>
+
+  <div class="footer">This page is intentionally a practice test for evaluating browser reading, question extraction, reasoning, and answer suggestions.</div>
+</div>
+</body>
+</html>

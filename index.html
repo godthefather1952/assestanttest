@@ -1,125 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Assestant Live Test</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Assestant + Audioassistant Live Test</title>
 <style>
-  body{font-family:Arial,Helvetica,sans-serif;background:#111;color:#eee;margin:0;padding:24px;line-height:1.45}
-  .wrap{max-width:900px;margin:0 auto}
-  h1{margin:0 0 8px}
-  .note{color:#bbb;margin-bottom:24px}
-  .q{background:#1b1b1b;border:1px solid #333;border-radius:14px;padding:18px;margin:14px 0}
-  .meta{font-size:13px;color:#aaa;margin-bottom:8px}
-  input[type=text], textarea{width:100%;box-sizing:border-box;background:#0d0d0d;color:#fff;border:1px solid #444;border-radius:8px;padding:10px;margin-top:10px}
-  textarea{min-height:90px}
-  code,pre{background:#0b0b0b;border-radius:8px}
-  pre{padding:12px;overflow:auto}
-  label{display:block;margin:7px 0}
-  .footer{margin-top:28px;color:#888;font-size:13px}
+body{font-family:Arial,Helvetica,sans-serif;background:#111;color:#eee;margin:0;padding:24px;line-height:1.45}
+.wrap{max-width:900px;margin:auto} h1{margin:0 0 8px}.note{color:#bbb;margin-bottom:24px}
+.q{background:#1b1b1b;border:1px solid #333;border-radius:14px;padding:18px;margin:14px 0}
+.meta{font-size:13px;color:#aaa;margin-bottom:10px}.play{background:#eee;color:#111;border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
+input[type=text],textarea{width:100%;box-sizing:border-box;background:#0d0d0d;color:#fff;border:1px solid #444;border-radius:8px;padding:10px;margin-top:12px}
+textarea{min-height:80px}.hint{font-size:13px;color:#888;margin-top:8px}.footer{margin-top:28px;color:#888;font-size:13px}
 </style>
-</head>
-<body>
-<div class="wrap">
-  <h1>Assestant Live Test</h1>
-  <div class="note">Personal practice page for testing /assestant in a browser. 25 questions, mixed topics, with difficulty ranging from 1/10 to 10/10.</div>
+</head><body><div class="wrap">
+<h1>Assestant + Audioassistant Live Test</h1>
+<div class="note">12-question personal practice test. Press Play Question to hear each prompt, then answer it. Questions range from difficulty 1/10 to 10/10.</div>
 
-  <div class="q">
-    <div class="meta">1. Math · Difficulty 1/10</div>
-    <strong>Fill in the blank:</strong> 7 + 8 = ___
-    <input type="text" />
-  </div>
+<div class="q"><div class="meta">1. Math · Difficulty 1/10</div><button class="play" data-say="What is seven plus eight?">▶ Play Question</button><input type="text" placeholder="Your answer"></div>
+<div class="q"><div class="meta">2. Math · Difficulty 3/10</div><button class="play" data-say="If three x equals twenty-one, what is x?">▶ Play Question</button><input type="text" placeholder="Your answer"></div>
+<div class="q"><div class="meta">3. Logic · Difficulty 4/10</div><button class="play" data-say="What number comes next in this pattern? Two, four, eight, sixteen.">▶ Play Question</button><input type="text" placeholder="Your answer"></div>
+<div class="q"><div class="meta">4. Scenario · Difficulty 5/10</div><button class="play" data-say="A teammate accidentally deletes a shared file needed for a deadline in one hour. What should you do first? A: blame the teammate. B: check version history or backups and try to restore it. C: rebuild everything immediately. D: wait for someone else to fix it.">▶ Play Question</button><input type="text" placeholder="Choice and answer"></div>
+<div class="q"><div class="meta">5. Python · Difficulty 4/10</div><button class="play" data-say="In Python, what built-in function returns the largest item in a list?">▶ Play Question</button><input type="text" placeholder="Your answer"></div>
+<div class="q"><div class="meta">6. Python · Difficulty 6/10</div><button class="play" data-say="In Python, a list contains one, two, and three. What does sum of that list return?">▶ Play Question</button><input type="text" placeholder="Your answer"></div>
+<div class="q"><div class="meta">7. Bash · Difficulty 5/10</div><button class="play" data-say="Which Bash command displays the current working directory?">▶ Play Question</button><input type="text" placeholder="Command"></div>
+<div class="q"><div class="meta">8. Bash · Difficulty 7/10</div><button class="play" data-say="Which command lists all files, including hidden files, in long format?">▶ Play Question</button><input type="text" placeholder="Command"></div>
+<div class="q"><div class="meta">9. JavaScript · Difficulty 7/10</div><button class="play" data-say="How would you write a simple JavaScript function named square that takes x and returns x multiplied by x?">▶ Play Question</button><textarea placeholder="Your code"></textarea></div>
+<div class="q"><div class="meta">10. Cybersecurity · Difficulty 6/10</div><button class="play" data-say="You receive an unexpected email asking you to reset your password through a link. What is the safest first action? A: click the link. B: reply to the sender. C: independently navigate to the official service and verify the request. D: forward the email to friends.">▶ Play Question</button><input type="text" placeholder="Choice and answer"></div>
+<div class="q"><div class="meta">11. SQL · Difficulty 8/10</div><button class="play" data-say="In SQL, what keyword belongs between SELECT star FROM users and age greater than twenty-one, if you only want rows where age is greater than twenty-one?">▶ Play Question</button><input type="text" placeholder="Keyword"></div>
+<div class="q"><div class="meta">12. Debugging · Difficulty 10/10</div><button class="play" data-say="A Python program intermittently fails when several threads update the same shared counter. What type of concurrency problem should you investigate first? A: race condition. B: CSS specificity. C: DNS caching. D: SQL normalization.">▶ Play Question</button><input type="text" placeholder="Choice and answer"></div>
 
-  <div class="q">
-    <div class="meta">2. Math · Difficulty 3/10</div>
-    <strong>Fill in the blank:</strong> If 3x = 21, then x = ___
-    <input type="text" />
-  </div>
-
-  <div class="q">
-    <div class="meta">3. Logic · Difficulty 4/10</div>
-    <strong>Which value completes the pattern?</strong><br/>2, 4, 8, 16, ___
-    <label><input type="radio" name="q3"/> 18</label>
-    <label><input type="radio" name="q3"/> 24</label>
-    <label><input type="radio" name="q3"/> 32</label>
-    <label><input type="radio" name="q3"/> 34</label>
-  </div>
-
-  <div class="q">
-    <div class="meta">4. Scenario · Difficulty 5/10</div>
-    <strong>You discover that a teammate accidentally deleted a shared file needed for a deadline in one hour. What would you do first?</strong>
-    <label><input type="radio" name="q4"/> A. Blame the teammate in the group chat</label>
-    <label><input type="radio" name="q4"/> B. Check version history/backups and try to restore the file</label>
-    <label><input type="radio" name="q4"/> C. Start rebuilding from scratch without checking anything</label>
-    <label><input type="radio" name="q4"/> D. Wait and see if someone else fixes it</label>
-  </div>
-
-  <div class="q">
-    <div class="meta">5. Python · Difficulty 5/10</div>
-    <strong>What does this print?</strong>
-    <pre><code>nums = [1, 2, 3]
-print(sum(nums))</code></pre>
-    <input type="text" placeholder="Output" />
-  </div>
-
-  <div class="q">
-    <div class="meta">6. Python · Difficulty 7/10</div>
-    <strong>Write one Python expression that returns the largest value in <code>values</code>.</strong>
-    <textarea placeholder="Your code"></textarea>
-  </div>
-
-  <div class="q">
-    <div class="meta">7. Bash · Difficulty 6/10</div>
-    <strong>Which command lists all files, including hidden files, in long format?</strong>
-    <label><input type="radio" name="q7"/> A. ls</label>
-    <label><input type="radio" name="q7"/> B. ls -l</label>
-    <label><input type="radio" name="q7"/> C. ls -la</label>
-    <label><input type="radio" name="q7"/> D. pwd -la</label>
-  </div>
-
-  <div class="q">
-    <div class="meta">8. Bash · Difficulty 8/10</div>
-    <strong>Fill in the blank to print only lines containing the word "error" from <code>app.log</code>:</strong>
-    <pre><code>_____ "error" app.log</code></pre>
-    <input type="text" />
-  </div>
-
-  <div class="q">
-    <div class="meta">9. Coding · Difficulty 8/10</div>
-    <strong>How would you write a simple function in JavaScript that returns the square of a number?</strong>
-    <textarea placeholder="Your function"></textarea>
-  </div>
-
-  <div class="q">
-    <div class="meta">10. Mixed Scenario + Reasoning · Difficulty 10/10</div>
-    <strong>You are debugging a script that works locally but fails on a Linux server with "Permission denied." Which action is the best first check?</strong>
-    <label><input type="radio" name="q10"/> A. Rewrite the script in another language</label>
-    <label><input type="radio" name="q10"/> B. Check file permissions and whether the script is executable</label>
-    <label><input type="radio" name="q10"/> C. Delete the server logs</label>
-    <label><input type="radio" name="q10"/> D. Reinstall the operating system</label>
-  </div>
-
-
-  <div class="q"><div class="meta">11. Math · Difficulty 2/10</div><strong>Fill in the blank:</strong> 12 × 4 = ___<input type="text" /></div>
-  <div class="q"><div class="meta">12. Percentages · Difficulty 4/10</div><strong>A $80 item is discounted by 25%. What is the sale price?</strong><label><input type="radio" name="q12"/> A. $20</label><label><input type="radio" name="q12"/> B. $55</label><label><input type="radio" name="q12"/> C. $60</label><label><input type="radio" name="q12"/> D. $65</label></div>
-  <div class="q"><div class="meta">13. Logic · Difficulty 5/10</div><strong>All Rens are Tovs. No Tovs are Meks. Can any Ren be a Mek?</strong><label><input type="radio" name="q13"/> A. Yes</label><label><input type="radio" name="q13"/> B. No</label><label><input type="radio" name="q13"/> C. Only sometimes</label><label><input type="radio" name="q13"/> D. Not enough information</label></div>
-  <div class="q"><div class="meta">14. Scenario · Difficulty 4/10</div><strong>A customer reports a bug you cannot reproduce. What is the best next step?</strong><label><input type="radio" name="q14"/> A. Close the ticket</label><label><input type="radio" name="q14"/> B. Ask for exact steps, environment details, and relevant logs</label><label><input type="radio" name="q14"/> C. Tell them the software works</label><label><input type="radio" name="q14"/> D. Rebuild the entire application</label></div>
-  <div class="q"><div class="meta">15. Scenario · Difficulty 6/10</div><strong>You have two urgent tasks due today and cannot finish both on time. What would you do first?</strong><textarea placeholder="Brief response"></textarea></div>
-  <div class="q"><div class="meta">16. Python · Difficulty 4/10</div><strong>What does this print?</strong><pre><code>name = "Claude"
-print(name[0])</code></pre><input type="text" placeholder="Output" /></div>
-  <div class="q"><div class="meta">17. Python · Difficulty 6/10</div><strong>Fill in the blank so the loop prints 0, 1, and 2:</strong><pre><code>for i in _____:
-    print(i)</code></pre><input type="text" /></div>
-  <div class="q"><div class="meta">18. Python · Difficulty 8/10</div><strong>What is the output?</strong><pre><code>x = [1, 2, 3, 4]
-print([n * 2 for n in x if n % 2 == 0])</code></pre><input type="text" placeholder="Output" /></div>
-  <div class="q"><div class="meta">19. Bash · Difficulty 3/10</div><strong>Which command prints the current working directory?</strong><label><input type="radio" name="q19"/> A. cd</label><label><input type="radio" name="q19"/> B. pwd</label><label><input type="radio" name="q19"/> C. mkdir</label><label><input type="radio" name="q19"/> D. cat</label></div>
-  <div class="q"><div class="meta">20. Bash · Difficulty 7/10</div><strong>Write a Bash command that recursively searches the current directory for files containing the text "TODO".</strong><textarea placeholder="Command"></textarea></div>
-  <div class="q"><div class="meta">21. JavaScript · Difficulty 5/10</div><strong>What does this expression evaluate to?</strong><pre><code>2 === "2"</code></pre><label><input type="radio" name="q21"/> A. true</label><label><input type="radio" name="q21"/> B. false</label><label><input type="radio" name="q21"/> C. 2</label><label><input type="radio" name="q21"/> D. Error</label></div>
-  <div class="q"><div class="meta">22. JavaScript · Difficulty 7/10</div><strong>Write a JavaScript function that returns true when a number is even and false otherwise.</strong><textarea placeholder="Your function"></textarea></div>
-  <div class="q"><div class="meta">23. Cybersecurity · Difficulty 6/10</div><strong>You receive an unexpected email asking you to reset your password through a link. What is the safest first action?</strong><label><input type="radio" name="q23"/> A. Click it and inspect the page</label><label><input type="radio" name="q23"/> B. Reply asking if it is legitimate</label><label><input type="radio" name="q23"/> C. Independently navigate to the official service and verify the request</label><label><input type="radio" name="q23"/> D. Forward it to friends</label></div>
-  <div class="q"><div class="meta">24. SQL · Difficulty 8/10</div><strong>Fill in the blank to return only users whose age is greater than 21:</strong><pre><code>SELECT * FROM users _____ age &gt; 21;</code></pre><input type="text" /></div>
-  <div class="q"><div class="meta">25. Debugging · Difficulty 10/10</div><strong>A Python program intermittently fails when several threads update the same shared counter. What type of problem should you investigate first?</strong><label><input type="radio" name="q25"/> A. Race condition</label><label><input type="radio" name="q25"/> B. CSS specificity</label><label><input type="radio" name="q25"/> C. DNS caching</label><label><input type="radio" name="q25"/> D. SQL normalization</label></div>
-
-  <div class="footer">This page is intentionally a practice test for evaluating browser reading, question extraction, reasoning, and answer suggestions.</div>
+<div class="footer">Practice page for testing browser-based question recognition and user-initiated audio question assistance.</div>
 </div>
-</body>
-</html>
+<script>
+document.querySelectorAll('.play').forEach(btn=>{
+ btn.addEventListener('click',()=>{
+   speechSynthesis.cancel();
+   const u=new SpeechSynthesisUtterance(btn.dataset.say);
+   u.rate=0.92; u.pitch=1; u.lang='en-US';
+   speechSynthesis.speak(u);
+ });
+});
+</script>
+</body></html>

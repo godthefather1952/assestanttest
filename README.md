@@ -20,6 +20,8 @@ A mobile-first Solana opportunity desk that runs as a static webpage. NIGHTSHIFT
 - $10 default tracking size, $35 maximum
 - Maximum 3 tracked positions
 - $35 daily tracked-loss halt for new approvals
+- Simulated EXIT engine with stop, partial targets, breakeven protection, trailing logic, momentum/liquidity exits and setup-specific time exits
+- Open positions refresh independently from the discovery feed
 - Local browser history and evaluation records
 - JSON history export
 
@@ -69,6 +71,25 @@ Opportunity combines approximately:
 
 Hard safety failures cap the score. Unverified on-chain safety also caps the score below the Ready threshold.
 
+## Simulated EXIT engine
+
+The EXIT engine manages **tracked positions only**. It does not connect to a wallet or submit a sell transaction.
+
+Default v1 exit rules:
+
+- Hard protective stop: **-12%**
+- After the position reaches **+15%**, the protective stop moves to approximately breakeven
+- Target 1: at **+20%**, simulate closing **35%** of the original position
+- Target 2: at **+40%**, simulate closing another **35%**
+- Final **30%** becomes a runner with a **15% trailing stop from the observed peak**
+- Liquidity exit if live liquidity falls below **$10,000**
+- Liquidity exit if live liquidity falls **20% or more from entry**
+- Momentum-collapse exit when recent transaction activity is sufficient, buys fall below roughly **35%**, and 5-minute price change is **-7% or worse**
+- Setup time limits for trades that fail to develop: about **20 minutes for SNIPE, 90 minutes for MOMENTUM, 4 hours for RUNNER, and 60 minutes for PASS**
+- Time exits only fire when the position has not produced enough follow-through
+
+Tracked positions are refreshed separately from the discovery queue so an approved token does not need to remain a current discovery candidate for the EXIT engine to keep checking it. If a live quote becomes stale, NIGHTSHIFT marks the position **STALE** and does not fabricate an exit from an old price.
+
 ## Local state
 
 Browser storage is used for positions, desk decisions, evaluated-token snapshots and outcome tracking. Use **History → Export** to download the locally stored NIGHTSHIFT dataset as JSON.
@@ -91,10 +112,11 @@ For local testing, any basic static file server works. Opening `index.html` dire
 | Daily tracked-loss halt | $35 |
 | Base minimum liquidity | $10,000 |
 | Wallet execution | Disabled |
-| Automated exits | Disabled |
+| Simulated tracked-position exits | Enabled |
+| Real automated wallet exits | Disabled |
 | Social scraping | Disabled |
 | Deep historical whale intelligence | Disabled |
 
 ## Important v1 limitation
 
-This is an opportunity-analysis and local tracking interface, not an autonomous trading system. It does not connect to a wallet, place orders, or guarantee that a token is safe. Scores are deterministic heuristics based on the data available to the browser and should be treated as measurements to inspect, not facts about future performance.
+This is an opportunity-analysis and simulated position-management interface, not an autonomous trading system. It does not connect to a wallet, place orders, or guarantee that a token is safe. Scores are deterministic heuristics based on the data available to the browser and should be treated as measurements to inspect, not facts about future performance.

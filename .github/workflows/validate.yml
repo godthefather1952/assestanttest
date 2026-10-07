@@ -20,7 +20,7 @@ jobs:
       - name: Check JavaScript module syntax
         run: node --input-type=module --check < app.js
 
-      - name: Verify privacy-first static files
+      - name: Verify privacy-first SDXS app
         run: |
           test -s index.html
           test -s styles.css
@@ -28,9 +28,12 @@ jobs:
           test -s README.md
           test -s LICENSE
           grep -q "SunCanvas" index.html
-          grep -q "SD‑Turbo" index.html
+          grep -q "SDXS" index.html
           grep -q "No API key" README.md
+          grep -q "text_encoder_int8.onnx" app.js
+          grep -q "unet_int8.onnx" app.js
           ! grep -Rni "pollinations" index.html app.js styles.css README.md
+          ! grep -Rni "sd-turbo-ort-web" app.js
           ! grep -Rni "localStorage" app.js
           ! grep -Rni "web-txt2img" app.js
           ! grep -Rni "esm.sh" app.js

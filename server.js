@@ -545,10 +545,59 @@ app.get("/api/state", async (req, res) => {
     const title = await session.page.title().catch(() => "");
     const rawUrl = session.isHome ? "sandbox://home" : session.page.url();
     const notice = Date.now() - session.noticeAt < 5000 ? session.notice : "";
+    const editables = await session.page.evaluate(() => {
+      const selector = 'input:not([type="hidden"]), textarea, [contenteditable]:not([contenteditable="false"])';
+      const items = [];
+
+      for (const el of document.querySelectorAll(selector)) {
+        if (items.length >= 120) break;
+        if (el.disabled || el.readOnly) continue;
+
+        const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+
+        if (
+          rect.width < 4 ||
+          rect.height < 4 ||
+          rect.right < 0 ||
+          rect.bottom < 0 ||
+          rect.left > innerWidth ||
+          rect.top > innerHeight ||
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          Number(style.opacity) === 0
+        ) continue;
+
+        let inputMode = el.inputMode || "";
+        const type = (el.getAttribute("type") || "").toLowerCase();
+
+        if (!inputMode) {
+          if (type === "email") inputMode = "email";
+          else if (type === "url") inputMode = "url";
+          else if (type === "tel") inputMode = "tel";
+          else if (type === "number") inputMode = "decimal";
+          else if (type === "search") inputMode = "search";
+          else inputMode = "text";
+        }
+
+        items.push({
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height,
+          inputMode,
+          enterKeyHint: el.enterKeyHint || ""
+        });
+      }
+
+      return items;
+    }).catch(() => []);
+
     res.json({
       url: rawUrl,
       title,
       notice,
+      editables,
       expiresInMs: Math.max(0, Math.min(
         SESSION_IDLE_MS - (Date.now() - session.lastActive),
         SESSION_MAX_MS - (Date.now() - session.createdAt)
@@ -622,14 +671,39 @@ app.post("/api/click", async (req, res) => {
   try {
     await session.page.mouse.click(x, y);
     await session.page.waitForTimeout(80);
-    const editable = await session.page.evaluate(() => {
+    const editableInfo = await session.page.evaluate(() => {
       const el = document.activeElement;
-      if (!el) return false;
+      if (!el) return null;
+
       const tag = el.tagName?.toLowerCase();
-      return tag === "input" || tag === "textarea" || el.isContentEditable;
-    }).catch(() => false);
+      const editable = tag === "input" || tag === "textarea" || el.isContentEditable;
+      if (!editable || el.disabled || el.readOnly) return null;
+
+      let inputMode = el.inputMode || "";
+      const type = (el.getAttribute?.("type") || "").toLowerCase();
+
+      if (!inputMode) {
+        if (type === "email") inputMode = "email";
+        else if (type === "url") inputMode = "url";
+        else if (type === "tel") inputMode = "tel";
+        else if (type === "number") inputMode = "decimal";
+        else if (type === "search") inputMode = "search";
+        else inputMode = "text";
+      }
+
+      return {
+        inputMode,
+        enterKeyHint: el.enterKeyHint || ""
+      };
+    }).catch(() => null);
+
     session.isHome = false;
-    res.json({ ok: true, editable });
+    res.json({
+      ok: true,
+      editable: Boolean(editableInfo),
+      inputMode: editableInfo?.inputMode || "",
+      enterKeyHint: editableInfo?.enterKeyHint || ""
+    });
   } catch {
     res.status(500).json({ error: "Click failed" });
   }

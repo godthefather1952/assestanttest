@@ -37,11 +37,11 @@ The current private engine uses:
 - Seeded generation
 - Open model files downloaded once and cached locally
 
-The browser integration uses the MIT-licensed `web-txt2img` project and ONNX Runtime Web. Model/runtime files are downloaded from public model/CDN hosts; no generation request is sent to those hosts.
+The browser integration talks directly to ONNX Runtime Web. Model/runtime files are downloaded from public model/CDN hosts; no generation request is sent to those hosts.
 
 ## Device requirements
 
-A modern browser with WebGPU and enough GPU memory is required. Local diffusion models are large, so some older phones, browsers, and low-memory computers will not be able to load the model.
+WebGPU is preferred. If WebGPU is unavailable, SunCanvas attempts a private CPU/WASM compatibility mode. CPU mode is dramatically slower and may still fail on low-memory devices because the local diffusion model is large.
 
 The initial model download is roughly 2.3 GB.
 

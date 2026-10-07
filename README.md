@@ -1,43 +1,63 @@
-# Assestant Browser
+# Sandbox Browser
 
-A lightweight mobile-friendly browser shell for testing the `/assestant` Claude skill from a normal web page.
+This repository is now a dedicated **remote sandboxed web browser**.
 
-## What changed
+When the deployed site opens, the page itself is the browser UI. Websites run inside an isolated headless Chromium context on the server and are rendered back to the visitor as screenshots. Clicks, scrolling, navigation, and typing are relayed to that remote browser.
 
-- `index.html` is now the browser interface.
-- `assessment.html` preserves the original 15-question Assestant Live Test as the browser home page.
-- The browser includes Back, Forward, Reload, Home, an address/search field, Go, and Open Tab.
-- URLs that allow iframe embedding can be used inside the browser viewport.
-- Sites that block iframe embedding can still be opened with **Open Tab**.
+## Security model
+
+- Each visitor session gets its own Chromium browser context.
+- Remote website code does **not** run directly in the visitor's browser.
+- File downloads are disabled with Playwright's `acceptDownloads: false` and download events are cancelled.
+- Private, local, link-local, reserved, and other non-public network destinations are blocked to reduce SSRF/internal-network access.
+- Only HTTP/HTTPS on ports 80 and 443 are allowed.
+- Service workers are blocked.
+- Browser sessions expire after inactivity.
+- Popups are folded back into the current remote tab instead of opening uncontrolled local windows.
+- Camera, microphone, geolocation, USB, and payment permissions are disabled for the app UI.
+
+## Important boundary
+
+This is a **remote browser**, not an anonymity service. Remote websites see the deployment server's network identity. The server receives the navigation and input commands needed to operate the remote page, so do not use a deployment you do not trust for sensitive credentials.
+
+The user receives page images, not remote response bodies or downloaded files.
 
 ## Run locally
 
-For best results, serve the folder with a local HTTP server instead of opening `index.html` as a `file://` URL.
-
-Example with Python:
+You need Docker because the app requires Chromium.
 
 ```bash
-python3 -m http.server 8000
+docker build -t sandbox-browser .
+docker run --rm -p 10000:10000 sandbox-browser
 ```
 
 Then open:
 
 ```
-http://localhost:8000
+http://localhost:10000
 ```
 
-## Publish with GitHub Pages
+## Deploy
 
-In GitHub:
+This is **not a GitHub Pages app**. GitHub Pages cannot run the Chromium backend.
 
-1. Open **Settings**
-2. Go to **Pages**
-3. Under **Build and deployment**, choose **Deploy from a branch**
-4. Select **main** and **/(root)**
-5. Save
+A `render.yaml` and `Dockerfile` are included for a Render Docker deployment. Other Docker-capable hosts can also run it.
 
-The root Pages URL will open the browser interface.
+## Environment variables
 
-## Browser limitation
+- `PORT` — HTTP port, defaults to `10000`
+- `MAX_SESSIONS` — maximum concurrent isolated browser sessions, defaults to `8`
+- `SESSION_IDLE_MS` — inactive-session lifetime, defaults to 15 minutes
 
-This project is a web app, not a native browser engine. Modern websites can use security headers such as `X-Frame-Options` or Content Security Policy `frame-ancestors` to prevent being shown inside another webpage. When that happens, use **Open Tab** to open the address normally.
+## Current interaction model
+
+The remote viewport supports:
+
+- address/search navigation
+- back / forward / reload / home
+- mouse or touch clicking
+- wheel or touch scrolling
+- keyboard entry
+- an on-screen mobile typing dock
+- responsive viewport resizing
+- automatic download cancellation

@@ -26,7 +26,7 @@
       <section class="hero">
         <p class="eyebrow">LOCAL · PRIVATE · NO ACCOUNT · NO API KEY</p>
         <h1>Your prompt stays with you.</h1>
-        <p class="hero-copy">SunCanvas runs an open-weight image model on your own device with WebGPU. Your prompt and generated image are not sent to an image-generation server.</p>
+        <p class="hero-copy">SunCanvas runs an open-weight image model on your own device with CPU/WASM inference. Your prompt and generated image are not sent to an image-generation server.</p>
       </section>
 
       <section class="privacy-banner">
@@ -41,8 +41,8 @@
       <section class="model-panel" aria-label="Local model">
         <div class="model-copy">
           <p class="eyebrow">LOCAL MODEL</p>
-          <h2>SD‑Turbo · 512 × 512</h2>
-          <p>The first time, your browser downloads about 2.3 GB of open model files and caches them locally. After the model is loaded, generation happens on your GPU.</p>
+          <h2>SDXS‑512 INT8 · 512 × 512</h2>
+          <p>The first time, your browser downloads about 680 MB of quantized model files and caches them locally. During generation, SunCanvas loads one model stage at a time to keep memory use much lower.</p>
         </div>
         <div class="model-actions">
           <button class="generate-btn" id="loadModelBtn" type="button">Download local model</button>
@@ -83,7 +83,7 @@
           <div class="controls-grid local-controls">
             <label class="control">
               <span>Model</span>
-              <div class="fixed-control">SD‑Turbo · local WebGPU</div>
+              <div class="fixed-control">SDXS‑512 INT8 · local CPU</div>
             </label>
             <label class="control">
               <span>Image size</span>
@@ -135,7 +135,7 @@
           </div>
           <div class="card-bar">
             <div class="card-meta">
-              <strong id="resultMeta">SD‑Turbo</strong>
+              <strong id="resultMeta">SDXS‑512 INT8</strong>
               <span id="resultSubmeta">Generated on this device</span>
             </div>
             <div class="card-actions">
@@ -170,7 +170,7 @@
 
     <footer>
       <span>SunCanvas</span>
-      <span>Local inference powered by WebGPU + SD‑Turbo.</span>
+      <span>Local inference powered by ONNX Runtime Web + SDXS‑512 INT8.</span>
       <span>Independent project · not affiliated with OpenAI.</span>
     </footer>
   </div>

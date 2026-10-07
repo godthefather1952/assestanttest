@@ -34,24 +34,29 @@
         <div class="spinner"></div>
         <span>Starting isolated browser…</span>
       </div>
+
       <img id="screen" alt="Remote browser page" draggable="false">
       <div class="notice" id="notice" role="status"></div>
-      <div class="keyboard-dock" id="keyboardDock">
-        <input id="typeBox" autocomplete="off" autocapitalize="sentences" placeholder="Type into selected field">
-        <button id="sendTextBtn">Type</button>
-        <button id="backspaceBtn" class="dock-icon" aria-label="Backspace">⌫</button>
-        <button id="enterBtn" class="dock-icon" aria-label="Enter">↵</button>
-        <button id="closeKeyboardBtn" class="dock-icon" aria-label="Close keyboard">×</button>
-      </div>
+
+      <textarea
+        id="keyboardBridge"
+        class="keyboard-bridge"
+        aria-label="Remote page keyboard input"
+        autocomplete="off"
+        autocorrect="on"
+        autocapitalize="sentences"
+        spellcheck="false"
+        tabindex="-1"
+      ></textarea>
     </section>
 
     <footer class="statusbar">
       <span id="status">Connecting…</span>
-      <button id="keyboardBtn" class="keyboard-btn">Keyboard</button>
       <button id="endSessionBtn" class="keyboard-btn danger-btn">End session</button>
       <button id="signOutBtn" class="keyboard-btn">Sign out</button>
     </footer>
   </main>
+
   <script src="/app.js" defer></script>
 </body>
 </html>

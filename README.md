@@ -9,8 +9,11 @@ A mobile-first Solana opportunity desk that runs as a static webpage. NIGHTSHIFT
 - Live DexScreener market data
 - Basic Pump/PumpSwap identification from DexScreener markets
 - Public Solana RPC safety verification where available
-- Mint authority and freeze authority checks
+- On-demand safety recheck whenever an unverified token is opened for review
+- Mint-account type and supported token-program validation
+- Mint authority and freeze authority checks using finalized RPC reads
 - Raw top-10 token-account concentration (informational; pools/vaults are not fully classified in v1)
+- Conservative Token-2022 handling: Token-2022 assets remain unverified until extension behavior is explicitly supported
 - Dynamic liquidity guardrail
 - Momentum score from 5m buy/sell pressure, volume pace, transaction activity, price acceleration and locally observed liquidity change
 - Opportunity score combining Safety, Momentum and Liquidity quality
@@ -40,8 +43,11 @@ NIGHTSHIFT never invents a pass for data it cannot verify. In v1:
 
 **Hard/verified checks**
 - Minimum liquidity
-- Mint authority
-- Freeze authority
+- Mint account exists and parses as a mint
+- Mint is owned by the canonical SPL Token or Token-2022 program
+- Mint authority field is explicitly present and disabled
+- Freeze authority field is explicitly present and disabled
+- Largest-holder RPC data is available and internally consistent
 
 **Visible but limited**
 - Raw top-10 token-account concentration. This may include pool/vault accounts, so it is treated cautiously rather than represented as definitive insider ownership.
@@ -51,7 +57,9 @@ NIGHTSHIFT never invents a pass for data it cannot verify. In v1:
 - Insider/bundle clustering
 - Transfer restrictions / honeypot behavior beyond what can be established by the current sources
 
-If Solana RPC verification fails, the Opportunity score is capped and the setup cannot become **Ready** for approval.
+If Solana RPC verification fails, the Opportunity score is capped and the setup cannot become **Ready** for approval. Opening an unverified token's review screen triggers a fresh on-demand RPC validation attempt and shows the reason when verification still fails.
+
+Token-2022 mints are treated conservatively. NIGHTSHIFT can read their basic mint/freeze authority fields, but because Token-2022 can include extensions such as permanent delegation, transfer hooks, fees, and default account state, v1 does not mark a Token-2022 asset **Ready** until those extension behaviors are explicitly supported.
 
 ## Scoring
 

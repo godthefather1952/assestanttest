@@ -1,48 +1,53 @@
 # SunCanvas
 
-SunCanvas is a free, open-source, mobile-friendly AI image generator that runs as a static website.
+SunCanvas is a privacy-first, open-source image generator designed to run AI image generation locally in the visitor's browser.
 
-It was built as an independent alternative to proprietary image-generation interfaces. It **does not contain, copy, or reproduce OpenAI model weights, training data, source code, or the GPT Image model itself**.
+It is an independent project. It does **not** contain, copy, or reproduce OpenAI's proprietary GPT Image weights, training data, source code, or internal model implementation.
 
-## What it does
+## Privacy design
 
-- Text-to-image generation
-- Flux, Z-Image, and Klein model choices through Pollinations
-- 1:1, 4:3, 3:4, 16:9, and 9:16 aspect ratios
-- Standard and high-detail output sizes
-- 1–4 images per prompt
-- Style presets
-- Prompt enhancement toggle
-- Negative-prompt field
-- Reproducible seed control
-- Safe-mode toggle
-- Local generation history
-- Mobile-first interface
-- No app account or app-side API key
+SunCanvas deliberately does not use an image-generation API.
 
-## How generation works
+- No API key
+- No login or user account
+- No application backend
+- No prompt upload
+- No generated-image upload
+- No prompt history in `localStorage`
+- No analytics, ad tracker, telemetry SDK, or application database
+- Generated images are held as in-memory browser blobs until the user saves them or clears/closes the tab
+- Model files are cached locally by the browser so they do not need to be fetched for every generation
 
-The site is completely static. Your browser sends image requests directly to Pollinations.
+### Network boundary
 
-Primary endpoint:
+The first time the model is loaded, the browser has to download the open model/runtime files. Those download hosts can observe ordinary network metadata such as the visitor's IP address, just as any website/CDN can.
 
-`https://gen.pollinations.ai/image/{prompt}`
+The prompt itself is **not** part of the model download request and inference happens locally after the files are loaded.
 
-Legacy fallback:
+This distinction matters: SunCanvas is designed for private prompts and account-free use, but a public web page cannot truthfully promise that the visitor's IP address is invisible to GitHub Pages, a CDN, or the model file host.
 
-`https://image.pollinations.ai/prompt/{prompt}`
+## Local model
 
-This keeps the GitHub project lightweight and avoids requiring a paid GPU server. The availability, quotas, model lineup, and terms of the generation provider can change independently of this repository.
+The current private engine uses:
 
-## Privacy
+- **SD-Turbo**
+- 512 × 512 output
+- WebGPU acceleration
+- Browser-side ONNX Runtime inference
+- Seeded generation
+- Open model files downloaded once and cached locally
 
-This repository has no database and no application server. Recent-generation history is stored in your browser with `localStorage`.
+The browser integration uses the MIT-licensed `web-txt2img` project and ONNX Runtime Web. Model/runtime files are downloaded from public model/CDN hosts; no generation request is sent to those hosts.
 
-Prompts and generation parameters are sent to Pollinations in order to create images. Review Pollinations' current privacy and usage terms before entering sensitive information.
+## Device requirements
+
+A modern browser with WebGPU and enough GPU memory is required. Local diffusion models are large, so some older phones, browsers, and low-memory computers will not be able to load the model.
+
+The initial model download is roughly 2.3 GB.
 
 ## Run locally
 
-No build step is required.
+This project is a static site. Serve the repository over HTTP(S), for example:
 
 ```bash
 python3 -m http.server 8000
@@ -52,16 +57,23 @@ Then open:
 
 `http://localhost:8000`
 
+WebGPU generally requires a secure context when not using localhost.
+
 ## Deploy
 
-The project is designed for GitHub Pages. Serve the repository root from the `main` branch.
+The repository root is designed to be served directly by GitHub Pages.
 
 ## License
 
-MIT. See [LICENSE](./LICENSE).
+The SunCanvas application code is MIT licensed. See [LICENSE](./LICENSE).
 
-## Attribution
+Third-party libraries and model weights retain their own licenses.
 
-Image generation is powered by [Pollinations](https://pollinations.ai/).
+## Acknowledgements
+
+- `web-txt2img` — browser-only text-to-image library
+- ONNX Runtime Web
+- Transformers.js
+- Stability AI SD-Turbo open weights
 
 SunCanvas is not affiliated with or endorsed by OpenAI.

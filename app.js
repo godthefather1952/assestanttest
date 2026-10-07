@@ -38,7 +38,7 @@ const els = {
 };
 
 const MODEL_BASE = "https://huggingface.co/schmuell/sd-turbo-ort-web/resolve/main";
-const ORT_WEBGPU = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.webgpu.min.js";
+const ORT_WEBGPU = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0-dev.20240118-28a16c223c/dist/ort.webgpu.min.js";
 const ORT_WASM = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js";
 const ORT_ASSET_BASE = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/";
 
@@ -190,9 +190,9 @@ async function chooseBackend() {
   if (navigator.gpu) {
     try {
       const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
-      if (adapter) {
+      if (adapter && adapter.features?.has("shader-f16")) {
         backend = "webgpu";
-        els.privacyState.textContent = "WebGPU available · prompts stay local";
+        els.privacyState.textContent = "WebGPU + fp16 available · prompts stay local";
         els.statusText.textContent = "Ready to download the local GPU model";
         return;
       }
@@ -224,38 +224,39 @@ async function loadOrtRuntime() {
 async function fetchModelFile(path, index) {
   const url = `${MODEL_BASE}/${path}`;
   const cache = await caches.open("suncanvas-model-v2");
-  const cached = await cache.match(url);
+  let response = await cache.match(url);
 
-  if (cached) {
+  if (!response) {
+    setLoadProgress({
+      message: `Downloading ${MODEL_FILES[index].label}…`,
+      pct: Math.round((index / MODEL_FILES.length) * 100),
+      detail: "network"
+    });
+
+    try {
+      await cache.add(new Request(url, {
+        credentials: "omit",
+        referrerPolicy: "no-referrer"
+      }));
+      response = await cache.match(url);
+    } catch (cacheError) {
+      console.warn("Cache download failed; falling back to direct fetch:", cacheError);
+      response = await fetch(url, {
+        cache: "no-store",
+        credentials: "omit",
+        referrerPolicy: "no-referrer"
+      });
+    }
+  } else {
     setLoadProgress({
       message: `Loading cached ${MODEL_FILES[index].label}…`,
       pct: Math.round((index / MODEL_FILES.length) * 100),
       detail: "cached"
     });
-    return await cached.arrayBuffer();
   }
 
-  setLoadProgress({
-    message: `Downloading ${MODEL_FILES[index].label}…`,
-    pct: Math.round((index / MODEL_FILES.length) * 100)
-  });
-
-  const response = await fetch(url, {
-    cache: "no-store",
-    credentials: "omit",
-    referrerPolicy: "no-referrer"
-  });
-
-  if (!response.ok) {
-    throw new Error(`Model download failed (${response.status}) for ${MODEL_FILES[index].label}.`);
-  }
-
-  const cloned = response.clone();
-
-  try {
-    await cache.put(url, cloned);
-  } catch (error) {
-    console.warn("Model cache write skipped:", error);
+  if (!response?.ok) {
+    throw new Error(`Model download failed (${response?.status || "network"}) for ${MODEL_FILES[index].label}.`);
   }
 
   return await response.arrayBuffer();
@@ -289,6 +290,10 @@ function sessionOptions(key) {
       }
     }
   };
+
+  if (backend === "webgpu") {
+    options.preferredOutputLocation = { last_hidden_state: "gpu-buffer" };
+  }
 
   if (key === "unet") {
     options.freeDimensionOverrides = {

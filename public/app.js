@@ -10,16 +10,10 @@
     notice: document.getElementById("notice"),
     keyboardDock: document.getElementById("keyboardDock"),
     keyboardBtn: document.getElementById("keyboardBtn"),
-    typeBox: document.getElementById("typeBox")
+    typeBox: document.getElementById("typeBox"),
+    endSessionBtn: document.getElementById("endSessionBtn"),
+    signOutBtn: document.getElementById("signOutBtn")
   };
-
-  let sessionId = localStorage.getItem("sandboxBrowserSession");
-  if (!sessionId || !/^[a-zA-Z0-9_-]{20,100}$/.test(sessionId)) {
-    const bytes = new Uint8Array(24);
-    crypto.getRandomValues(bytes);
-    sessionId = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
-    localStorage.setItem("sandboxBrowserSession", sessionId);
-  }
 
   let ready = false;
   let busy = false;
@@ -29,24 +23,22 @@
   let touchStart = null;
   let lastTouch = null;
   let resizeTimer = 0;
-
-  function apiHeaders(json = false) {
-    const headers = { "x-session-id": sessionId };
-    if (json) headers["content-type"] = "application/json";
-    return headers;
-  }
+  let screenTimer = 0;
+  let stateTimer = 0;
 
   async function api(path, options = {}) {
-    const opts = {
+    const response = await fetch(path, {
+      credentials: "same-origin",
       ...options,
-      headers: { ...apiHeaders(Boolean(options.body)), ...(options.headers || {}) }
-    };
-    const response = await fetch(path, opts);
+      headers: {
+        ...(options.body ? { "content-type": "application/json" } : {}),
+        ...(options.headers || {})
+      }
+    });
 
-    if (response.status === 404 && path !== "/api/session") {
-      ready = false;
-      await startSession();
-      throw new Error("Session restarted");
+    if (response.status === 401) {
+      location.href = "/login";
+      throw new Error("Authentication required");
     }
 
     const data = await response.json().catch(() => ({}));
@@ -64,7 +56,8 @@
 
   async function startSession() {
     els.loading.classList.remove("hidden");
-    els.status.textContent = "Starting isolated Chromium session…";
+    els.loading.querySelector("span").textContent = "Starting isolated browser…";
+    els.status.textContent = "Starting hardened Chromium session…";
 
     await api("/api/session", {
       method: "POST",
@@ -72,9 +65,9 @@
     });
 
     ready = true;
-    els.status.textContent = "Remote browser connected";
+    els.status.textContent = "Protected remote browser connected";
     await updateState();
-    await refreshScreen();
+    scheduleScreen(0);
   }
 
   function showNotice(message) {
@@ -98,18 +91,35 @@
       }
 
       if (state.notice) showNotice(state.notice);
-    } catch {}
+      if (typeof state.expiresInMs === "number") {
+        const mins = Math.max(0, Math.ceil(state.expiresInMs / 60000));
+        els.status.textContent = `Protected remote browser · session expires in ~${mins}m`;
+      }
+    } catch (error) {
+      if (/Session expired/i.test(error.message)) {
+        ready = false;
+        await startSession().catch(() => {});
+      }
+    }
+  }
+
+  function scheduleScreen(delay = 650) {
+    clearTimeout(screenTimer);
+    screenTimer = setTimeout(refreshScreen, delay);
   }
 
   async function refreshScreen() {
     if (!ready) return;
-
     try {
       const response = await fetch("/api/screenshot?t=" + Date.now(), {
-        headers: apiHeaders(),
+        credentials: "same-origin",
         cache: "no-store"
       });
 
+      if (response.status === 401) {
+        location.href = "/login";
+        return;
+      }
       if (response.status === 404) {
         ready = false;
         await startSession();
@@ -128,8 +138,7 @@
         els.screen.src = next;
       }
     } catch {}
-
-    setTimeout(refreshScreen, 650);
+    scheduleScreen();
   }
 
   async function action(path, body) {
@@ -148,8 +157,11 @@
     }
   }
 
-  els.navForm.addEventListener("submit", async (event) => {
+  els.navForm.addEventListener("submit", async event => {
     event.preventDefault();
+    if (!ready) await startSession().catch(error => showNotice(error.message));
+    if (!ready) return;
+
     const target = els.address.value.trim();
     els.status.textContent = target ? "Navigating…" : "Opening home…";
     els.loading.classList.remove("hidden");
@@ -164,7 +176,6 @@
       showNotice(error.message);
     } finally {
       els.loading.classList.add("hidden");
-      els.status.textContent = "Remote browser connected";
     }
   });
 
@@ -176,10 +187,8 @@
   function imagePoint(clientX, clientY) {
     const rect = els.screen.getBoundingClientRect();
     if (!rect.width || !rect.height || !els.screen.naturalWidth || !els.screen.naturalHeight) return null;
-
     const x = (clientX - rect.left) * (els.screen.naturalWidth / rect.width);
     const y = (clientY - rect.top) * (els.screen.naturalHeight / rect.height);
-
     if (x < 0 || y < 0 || x > els.screen.naturalWidth || y > els.screen.naturalHeight) return null;
     return { x, y };
   }
@@ -187,7 +196,6 @@
   async function remoteClick(clientX, clientY) {
     const point = imagePoint(clientX, clientY);
     if (!point || !ready) return;
-
     try {
       const result = await api("/api/click", {
         method: "POST",
@@ -203,11 +211,9 @@
     }
   }
 
-  els.screen.addEventListener("click", (event) => {
-    remoteClick(event.clientX, event.clientY);
-  });
+  els.screen.addEventListener("click", event => remoteClick(event.clientX, event.clientY));
 
-  els.stage.addEventListener("wheel", (event) => {
+  els.stage.addEventListener("wheel", event => {
     if (!ready) return;
     event.preventDefault();
     action("/api/scroll", {
@@ -216,36 +222,29 @@
     });
   }, { passive: false });
 
-  els.stage.addEventListener("touchstart", (event) => {
+  els.stage.addEventListener("touchstart", event => {
     if (event.touches.length !== 1) return;
     const touch = event.touches[0];
     touchStart = { x: touch.clientX, y: touch.clientY, time: Date.now() };
     lastTouch = { x: touch.clientX, y: touch.clientY };
   }, { passive: true });
 
-  els.stage.addEventListener("touchmove", (event) => {
+  els.stage.addEventListener("touchmove", event => {
     if (!touchStart || event.touches.length !== 1) return;
     event.preventDefault();
-
     const touch = event.touches[0];
     const dx = lastTouch.x - touch.clientX;
     const dy = lastTouch.y - touch.clientY;
     lastTouch = { x: touch.clientX, y: touch.clientY };
-
-    if (Math.abs(dx) + Math.abs(dy) > 2) {
-      action("/api/scroll", { dx: dx * 2.2, dy: dy * 2.2 });
-    }
+    if (Math.abs(dx) + Math.abs(dy) > 2) action("/api/scroll", { dx: dx * 2.2, dy: dy * 2.2 });
   }, { passive: false });
 
-  els.stage.addEventListener("touchend", (event) => {
+  els.stage.addEventListener("touchend", event => {
     if (!touchStart) return;
     const touch = event.changedTouches[0];
     const distance = Math.hypot(touch.clientX - touchStart.x, touch.clientY - touchStart.y);
     const elapsed = Date.now() - touchStart.time;
-
-    if (distance < 12 && elapsed < 550) {
-      remoteClick(touch.clientX, touch.clientY);
-    }
+    if (distance < 12 && elapsed < 550) remoteClick(touch.clientX, touch.clientY);
     touchStart = null;
     lastTouch = null;
   }, { passive: true });
@@ -271,7 +270,7 @@
     els.typeBox.focus();
   });
 
-  els.typeBox.addEventListener("keydown", async (event) => {
+  els.typeBox.addEventListener("keydown", async event => {
     if (event.key === "Enter") {
       event.preventDefault();
       const text = els.typeBox.value;
@@ -285,7 +284,7 @@
   document.getElementById("backspaceBtn").addEventListener("click", () => action("/api/key", { key: "Backspace" }));
   document.getElementById("enterBtn").addEventListener("click", () => action("/api/key", { key: "Enter" }));
 
-  window.addEventListener("keydown", (event) => {
+  window.addEventListener("keydown", event => {
     const active = document.activeElement;
     if (active === els.address || active === els.typeBox) return;
     const allowed = ["Enter","Backspace","Tab","Escape","Delete","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown"];
@@ -300,26 +299,48 @@
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      if (!ready) return;
-      const size = viewportSize();
-      action("/api/viewport", size);
+      if (ready) action("/api/viewport", viewportSize());
     }, 250);
   });
 
-  window.addEventListener("beforeunload", () => {
-    if (!ready) return;
-    fetch("/api/session", {
-      method: "DELETE",
-      headers: apiHeaders(),
-      keepalive: true
-    }).catch(() => {});
+  els.endSessionBtn.addEventListener("click", async () => {
+    try {
+      await api("/api/session", { method: "DELETE" });
+    } catch {}
+    ready = false;
+    clearTimeout(screenTimer);
+    els.screen.classList.remove("ready");
+    els.screen.removeAttribute("src");
+    els.address.value = "";
+    els.loading.classList.remove("hidden");
+    els.loading.querySelector("span").textContent = "Session ended";
+    els.status.textContent = "Session ended · enter an address to start a new isolated session";
+    showNotice("Remote browser data cleared");
   });
 
-  setInterval(updateState, 1200);
+  els.signOutBtn.addEventListener("click", async () => {
+    try {
+      await fetch("/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: "{}"
+      });
+    } finally {
+      location.href = "/login";
+    }
+  });
 
-  startSession().catch((error) => {
+  stateTimer = setInterval(updateState, 1500);
+
+  startSession().catch(error => {
     els.loading.querySelector("span").textContent = "Could not start browser";
     els.status.textContent = error.message;
     showNotice(error.message);
+  });
+
+  window.addEventListener("pagehide", () => {
+    clearTimeout(screenTimer);
+    clearInterval(stateTimer);
   });
 })();

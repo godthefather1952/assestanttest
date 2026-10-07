@@ -1,43 +1,177 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Assestant Live Test</title>
-<style>
-body{font-family:Arial,Helvetica,sans-serif;background:#111;color:#eee;margin:0;padding:24px;line-height:1.45}.wrap{max-width:900px;margin:auto}h1{margin:0 0 8px}.note{color:#bbb;margin-bottom:24px}.q{background:#1b1b1b;border:1px solid #333;border-radius:14px;padding:18px;margin:14px 0}.meta{font-size:13px;color:#aaa;margin-bottom:8px}input[type=text],textarea{width:100%;box-sizing:border-box;background:#0d0d0d;color:#fff;border:1px solid #444;border-radius:8px;padding:10px;margin-top:10px}textarea{min-height:90px}code,pre{background:#0b0b0b;border-radius:8px}pre{padding:12px;overflow:auto}label{display:block;margin:7px 0}.play{background:#eee;color:#111;border:0;border-radius:9px;padding:10px 16px;font-weight:bold;cursor:pointer;margin:10px 0}.audioq{border-color:#666}.footer{margin-top:28px;color:#888;font-size:13px}
-</style></head><body><div class="wrap">
-<h1>Assestant Live Test</h1>
-<div class="note">15-question personal practice test: 12 written questions plus 3 audio-playback questions.</div>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#151515" />
+  <title>Assestant Browser</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101010;--panel:#181818;--line:#303030;--text:#f3f3f3;--muted:#a8a8a8;--accent:#f3f3f3}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+    body{overflow:hidden}
+    .app{height:100dvh;display:flex;flex-direction:column}
+    .topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top)) 10px 8px}
+    .row{display:flex;align-items:center;gap:7px;max-width:1400px;margin:0 auto}
+    button,.url{height:40px;border:1px solid var(--line);border-radius:10px;background:#222;color:var(--text)}
+    button{min-width:40px;padding:0 12px;font-size:16px;cursor:pointer}
+    button:active{transform:scale(.98)}
+    button:disabled{opacity:.35;cursor:default}
+    .url{flex:1;min-width:0;padding:0 13px;font-size:15px;outline:none}
+    .url:focus{border-color:#666}
+    .go{font-weight:700;background:var(--accent);color:#111;border-color:var(--accent)}
+    .open{white-space:nowrap}
+    .status{max-width:1400px;margin:6px auto 0;font-size:12px;color:var(--muted);min-height:16px;padding:0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .viewport{position:relative;flex:1;min-height:0;background:#fff}
+    iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+    .hint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:3;max-width:min(92%,720px);background:rgba(20,20,20,.92);color:#ddd;border:1px solid #444;border-radius:10px;padding:8px 12px;font-size:12px;text-align:center;display:none}
+    @media(max-width:720px){
+      .topbar{padding-left:7px;padding-right:7px}
+      .row{gap:5px}
+      button{min-width:38px;padding:0 9px}
+      .open span{display:none}
+      .open::after{content:"↗"}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="row">
+      <button id="backBtn" aria-label="Back" title="Back">←</button>
+      <button id="forwardBtn" aria-label="Forward" title="Forward">→</button>
+      <button id="reloadBtn" aria-label="Reload" title="Reload">↻</button>
+      <button id="homeBtn" aria-label="Home" title="Assestant test">⌂</button>
+      <input id="urlInput" class="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Address" />
+      <button id="goBtn" class="go">Go</button>
+      <button id="openBtn" class="open" title="Open the current address in a normal browser tab"><span>Open tab</span></button>
+    </div>
+    <div id="status" class="status">Home: Assestant Live Test</div>
+  </header>
 
-<div class="q"><div class="meta">1. Math · Difficulty 1/10</div><strong>Fill in the blank:</strong> 9 + 6 = ___<input type="text"></div>
-<div class="q"><div class="meta">2. Math · Difficulty 3/10</div><strong>Fill in the blank:</strong> If 4x = 36, then x = ___<input type="text"></div>
-<div class="q"><div class="meta">3. Logic · Difficulty 4/10</div><strong>Which value completes the pattern?</strong><br>3, 6, 12, 24, ___<label><input type="radio" name="q3"> A. 30</label><label><input type="radio" name="q3"> B. 36</label><label><input type="radio" name="q3"> C. 48</label><label><input type="radio" name="q3"> D. 54</label></div>
-<div class="q"><div class="meta">4. Scenario · Difficulty 5/10</div><strong>A teammate reports a production problem but provides very little detail. What should you do first?</strong><label><input type="radio" name="q4"> A. Guess at the cause</label><label><input type="radio" name="q4"> B. Ask for reproduction steps, errors, and environment details</label><label><input type="radio" name="q4"> C. Reinstall everything</label><label><input type="radio" name="q4"> D. Ignore it</label></div>
-<div class="q"><div class="meta">5. Python · Difficulty 5/10</div><strong>What does this print?</strong><pre><code>values = [2, 4, 6]
-print(sum(values))</code></pre><input type="text" placeholder="Output"></div>
-<div class="q"><div class="meta">6. Python · Difficulty 7/10</div><strong>Write one Python expression that returns the smallest value in <code>numbers</code>.</strong><textarea placeholder="Your code"></textarea></div>
-<div class="q"><div class="meta">7. Bash · Difficulty 5/10</div><strong>Which command prints the current working directory?</strong><label><input type="radio" name="q7"> A. pwd</label><label><input type="radio" name="q7"> B. mkdir</label><label><input type="radio" name="q7"> C. touch</label><label><input type="radio" name="q7"> D. whoami</label></div>
-<div class="q"><div class="meta">8. Bash · Difficulty 7/10</div><strong>Fill in the blank to search <code>server.log</code> for lines containing "failed":</strong><pre><code>_____ "failed" server.log</code></pre><input type="text"></div>
-<div class="q"><div class="meta">9. JavaScript · Difficulty 6/10</div><strong>Write a JavaScript function that returns double a supplied number.</strong><textarea placeholder="Your function"></textarea></div>
-<div class="q"><div class="meta">10. Cybersecurity · Difficulty 6/10</div><strong>You receive an unexpected password-reset link. What is the safest first action?</strong><label><input type="radio" name="q10"> A. Open the link</label><label><input type="radio" name="q10"> B. Navigate independently to the official service and verify</label><label><input type="radio" name="q10"> C. Forward it</label><label><input type="radio" name="q10"> D. Reply with your username</label></div>
-<div class="q"><div class="meta">11. SQL · Difficulty 8/10</div><strong>Fill in the blank:</strong><pre><code>SELECT * FROM users _____ age &gt; 21;</code></pre><input type="text"></div>
-<div class="q"><div class="meta">12. Debugging · Difficulty 10/10</div><strong>Several threads update the same shared counter and the result changes unpredictably. What problem should you investigate first?</strong><label><input type="radio" name="q12"> A. Race condition</label><label><input type="radio" name="q12"> B. DNS caching</label><label><input type="radio" name="q12"> C. CSS specificity</label><label><input type="radio" name="q12"> D. Database normalization</label></div>
-
-<div class="q audioq"><div class="meta">13. Audio Playback · Math · Difficulty 3/10</div><strong>Audio question — press Play Question.</strong><br><button class="play" onclick="speak(13)">▶ Play Question</button><input type="text" placeholder="Answer"></div>
-<div class="q audioq"><div class="meta">14. Audio Playback · Bash · Difficulty 5/10</div><strong>Audio question — press Play Question.</strong><br><button class="play" onclick="speak(14)">▶ Play Question</button><input type="text" placeholder="Answer"></div>
-<div class="q audioq"><div class="meta">15. Audio Playback · Scenario · Difficulty 7/10</div><strong>Audio question — press Play Question.</strong><br><button class="play" onclick="speak(15)">▶ Play Question</button><textarea placeholder="Answer"></textarea></div>
-
-<div class="footer">Practice page for testing browser reading and user-initiated audio question analysis.</div>
+  <main class="viewport">
+    <iframe id="browserFrame" title="Browser content" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    <div id="hint" class="hint">Some websites prevent other websites from displaying them inside an embedded browser. If this page stays blank or shows a refusal message, tap <b>Open tab</b>.</div>
+  </main>
 </div>
+
 <script>
-const audioQuestions={
-13:"What is twelve multiplied by seven?",
-14:"Which Bash command lists all files, including hidden files, in long format? A, L S. B, L S dash L. C, L S dash L A. D, P W D.",
-15:"You are responsible for a project due today. You discover a critical error that could make the final result inaccurate. What should you do first? A, submit it anyway. B, hide the error. C, assess the error, communicate the risk, and prioritize correcting the critical issue. D, delete the project and start over."
-};
-function speak(n){
- if(!('speechSynthesis' in window)){alert('Speech playback is not supported in this browser.');return;}
- speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(audioQuestions[n]);
- u.rate=0.92; u.pitch=1; u.lang='en-US';
- speechSynthesis.speak(u);
-}
-</script></body></html>
+(() => {
+  const HOME = new URL('assessment.html', window.location.href).href;
+  const frame = document.getElementById('browserFrame');
+  const input = document.getElementById('urlInput');
+  const status = document.getElementById('status');
+  const hint = document.getElementById('hint');
+  const backBtn = document.getElementById('backBtn');
+  const forwardBtn = document.getElementById('forwardBtn');
+
+  const historyStack = [];
+  let historyIndex = -1;
+  let currentUrl = HOME;
+  let hintTimer;
+
+  function pretty(url){
+    try{
+      const u = new URL(url);
+      if(u.href === HOME) return 'assestant://home';
+      return u.href;
+    }catch{return url}
+  }
+
+  function normalize(raw){
+    const value = raw.trim();
+    if(!value) return HOME;
+    if(value === 'assestant://home' || value === 'home') return HOME;
+
+    if(/^https?:\/\//i.test(value)) return value;
+    if(/^file:/i.test(value) || /^javascript:/i.test(value) || /^data:/i.test(value)) {
+      throw new Error('That address type is not allowed.');
+    }
+    if(value.includes('.') && !/\s/.test(value)) return 'https://' + value;
+    return 'https://www.google.com/search?q=' + encodeURIComponent(value);
+  }
+
+  function updateButtons(){
+    backBtn.disabled = historyIndex <= 0;
+    forwardBtn.disabled = historyIndex >= historyStack.length - 1;
+  }
+
+  function load(url, push = true){
+    currentUrl = url;
+    input.value = pretty(url);
+    status.textContent = url === HOME ? 'Home: Assestant Live Test' : 'Loading ' + url;
+    frame.src = url;
+
+    if(push){
+      historyStack.splice(historyIndex + 1);
+      historyStack.push(url);
+      historyIndex = historyStack.length - 1;
+    }
+    updateButtons();
+
+    clearTimeout(hintTimer);
+    hint.style.display = 'none';
+    if(url !== HOME){
+      hintTimer = setTimeout(() => {
+        hint.style.display = 'block';
+        setTimeout(() => hint.style.display = 'none', 7000);
+      }, 2200);
+    }
+  }
+
+  function navigateFromInput(){
+    try{
+      load(normalize(input.value));
+    }catch(err){
+      status.textContent = err.message;
+    }
+  }
+
+  frame.addEventListener('load', () => {
+    status.textContent = currentUrl === HOME ? 'Home: Assestant Live Test' : 'Loaded: ' + currentUrl;
+  });
+
+  document.getElementById('goBtn').addEventListener('click', navigateFromInput);
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){e.preventDefault();navigateFromInput();}
+  });
+
+  backBtn.addEventListener('click', () => {
+    if(historyIndex > 0){
+      historyIndex--;
+      load(historyStack[historyIndex], false);
+    }
+  });
+
+  forwardBtn.addEventListener('click', () => {
+    if(historyIndex < historyStack.length - 1){
+      historyIndex++;
+      load(historyStack[historyIndex], false);
+    }
+  });
+
+  document.getElementById('reloadBtn').addEventListener('click', () => {
+    frame.src = 'about:blank';
+    requestAnimationFrame(() => frame.src = currentUrl);
+    status.textContent = 'Reloading ' + pretty(currentUrl);
+  });
+
+  document.getElementById('homeBtn').addEventListener('click', () => load(HOME));
+
+  document.getElementById('openBtn').addEventListener('click', () => {
+    const target = currentUrl === HOME ? HOME : currentUrl;
+    window.open(target, '_blank', 'noopener,noreferrer');
+  });
+
+  const params = new URLSearchParams(location.search);
+  const requested = params.get('url');
+  if(requested){
+    try{ load(normalize(requested)); }
+    catch{ load(HOME); }
+  }else{
+    load(HOME);
+  }
+})();
+</script>
+</body>
+</html>

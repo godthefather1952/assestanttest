@@ -372,3 +372,7 @@ footer{
   .results-section,.privacy-details{padding-top:54px}
   footer{padding:24px 0;display:grid;gap:7px}
 }
+
+.load-details{grid-column:1/-1;border-top:1px solid var(--line-soft);padding-top:10px}
+.load-details summary{cursor:pointer;color:#d6a8a8;font-size:11px}
+.load-details pre{white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto;margin:10px 0 0;padding:12px;border-radius:12px;background:#0b0b0d;border:1px solid #322426;color:#d7b7b7;font-size:10px;line-height:1.45}

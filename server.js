@@ -200,7 +200,7 @@ app.post("/logout", sameOriginOnly, (req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, sessions: sessions.size, sandbox: USE_CHROMIUM_SANDBOX });
+  res.json({ ok: true });
 });
 
 app.use((req, res, next) => {
@@ -510,7 +510,7 @@ async function getSession(req, res, { touch = false } = {}) {
     res.status(404).json({ error: "Session expired" });
     return null;
   }
-  touchSession(session);
+  if (touch) touchSession(session);
   return session;
 }
 
@@ -603,7 +603,7 @@ for (const [routeName, action] of [
   ["reload", async s => { if (s.isHome) await setHome(s); else await s.page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 }); }]
 ]) {
   app.post(`/api/${routeName}`, async (req, res) => {
-    const session = await getSession(req, res);
+    const session = await getSession(req, res, { touch: true });
     if (!session) return;
     try {
       await action(session);

@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b0b0c">
-  <meta name="description" content="SunCanvas is a free, open-source AI image generator.">
-  <title>SunCanvas — Free AI Image Generator</title>
+  <meta name="theme-color" content="#080809">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="SunCanvas is a private, open-source AI image generator that runs locally in your browser.">
+  <title>SunCanvas — Private Local AI Images</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -16,22 +17,51 @@
         <span>SunCanvas</span>
       </a>
       <div class="top-actions">
-        <button class="ghost-btn" id="clearHistoryBtn" type="button">Clear recent</button>
-        <a class="ghost-btn" href="https://github.com/godthefather1952/assestanttest" target="_blank" rel="noreferrer">GitHub</a>
+        <button class="ghost-btn" id="clearSessionBtn" type="button">Clear session</button>
+        <a class="ghost-btn" href="https://github.com/godthefather1952/assestanttest" target="_blank" rel="noreferrer">Source</a>
       </div>
     </header>
 
     <main>
       <section class="hero">
-        <p class="eyebrow">FREE · OPEN SOURCE · NO ACCOUNT</p>
-        <h1>Turn an idea into an image.</h1>
-        <p class="hero-copy">Describe what you want. SunCanvas sends the prompt directly from your browser to a free image-generation endpoint and shows the result here.</p>
+        <p class="eyebrow">LOCAL · PRIVATE · NO ACCOUNT · NO API KEY</p>
+        <h1>Your prompt stays with you.</h1>
+        <p class="hero-copy">SunCanvas runs an open-weight image model on your own device with WebGPU. Your prompt and generated image are not sent to an image-generation server.</p>
+      </section>
+
+      <section class="privacy-banner">
+        <div class="privacy-icon" aria-hidden="true">◉</div>
+        <div class="privacy-copy">
+          <strong>Private generation</strong>
+          <span>No account, API key, prompt history, analytics, cookies, or server-side inference.</span>
+        </div>
+        <div class="privacy-state" id="privacyState">Checking device…</div>
+      </section>
+
+      <section class="model-panel" aria-label="Local model">
+        <div class="model-copy">
+          <p class="eyebrow">LOCAL MODEL</p>
+          <h2>SD‑Turbo · 512 × 512</h2>
+          <p>The first time, your browser downloads about 2.3 GB of open model files and caches them locally. After the model is loaded, generation happens on your GPU.</p>
+        </div>
+        <div class="model-actions">
+          <button class="generate-btn" id="loadModelBtn" type="button">Download local model</button>
+          <button class="ghost-btn" id="removeModelBtn" type="button">Remove cached model</button>
+        </div>
+        <div class="model-progress" id="modelProgress" hidden>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="progress-row">
+            <span id="progressLabel">Preparing…</span>
+            <span id="progressValue"></span>
+          </div>
+        </div>
+        <p class="network-note">Privacy note: the first model download contacts the model host, which can see normal network metadata such as your IP address. Your prompt is not included in that download request.</p>
       </section>
 
       <section class="studio" aria-label="Image generator">
         <div class="composer">
           <label class="sr-only" for="prompt">Image prompt</label>
-          <textarea id="prompt" rows="5" maxlength="3000" placeholder="Describe the image you want to create…"></textarea>
+          <textarea id="prompt" rows="5" maxlength="1500" placeholder="Describe the image you want to create…" autocomplete="off" spellcheck="true"></textarea>
 
           <div class="prompt-tools">
             <div class="preset-row" aria-label="Style presets">
@@ -43,136 +73,105 @@
               <button class="chip" type="button" data-style="anime">Anime</button>
               <button class="chip" type="button" data-style="3d">3D</button>
             </div>
-
             <button id="surpriseBtn" class="text-btn" type="button">Surprise me</button>
           </div>
 
-          <div class="controls-grid">
+          <div class="controls-grid local-controls">
             <label class="control">
               <span>Model</span>
-              <select id="model">
-                <option value="flux">Flux · versatile</option>
-                <option value="zimage">Z-Image · artistic</option>
-                <option value="klein">Klein · fast</option>
-              </select>
+              <div class="fixed-control">SD‑Turbo · local WebGPU</div>
             </label>
-
             <label class="control">
-              <span>Aspect ratio</span>
-              <select id="ratio">
-                <option value="1:1">Square · 1:1</option>
-                <option value="4:3">Landscape · 4:3</option>
-                <option value="3:4">Portrait · 3:4</option>
-                <option value="16:9">Wide · 16:9</option>
-                <option value="9:16">Story · 9:16</option>
-              </select>
+              <span>Image size</span>
+              <div class="fixed-control">512 × 512</div>
             </label>
-
             <label class="control">
-              <span>Quality</span>
-              <select id="quality">
-                <option value="standard">Standard</option>
-                <option value="high">High detail</option>
-              </select>
-            </label>
-
-            <label class="control">
-              <span>Images</span>
-              <select id="count">
-                <option value="1">1 image</option>
-                <option value="2">2 images</option>
-                <option value="3">3 images</option>
-                <option value="4">4 images</option>
-              </select>
+              <span>Seed</span>
+              <div class="seed-row">
+                <input id="seed" inputmode="numeric" pattern="[0-9]*" placeholder="Random" autocomplete="off">
+                <button id="randomSeedBtn" class="mini-btn" type="button">↻</button>
+              </div>
             </label>
           </div>
-
-          <details class="advanced">
-            <summary>Advanced controls</summary>
-            <div class="advanced-grid">
-              <label class="control">
-                <span>Seed</span>
-                <div class="seed-row">
-                  <input id="seed" inputmode="numeric" pattern="[0-9]*" placeholder="Random">
-                  <button id="randomSeedBtn" class="mini-btn" type="button">Randomize</button>
-                </div>
-              </label>
-
-              <label class="control">
-                <span>Avoid</span>
-                <input id="negativePrompt" maxlength="500" placeholder="Things you don't want in the image">
-              </label>
-
-              <label class="toggle">
-                <input id="enhance" type="checkbox" checked>
-                <span class="toggle-ui" aria-hidden="true"></span>
-                <span><strong>Prompt enhancement</strong><small>Add detail automatically when supported.</small></span>
-              </label>
-
-              <label class="toggle">
-                <input id="safeMode" type="checkbox" checked>
-                <span class="toggle-ui" aria-hidden="true"></span>
-                <span><strong>Safe mode</strong><small>Ask the provider to use stricter content filtering.</small></span>
-              </label>
-            </div>
-          </details>
 
           <div class="composer-footer">
-            <span class="privacy-note">Prompts are sent to Pollinations for generation.</span>
-            <button id="generateBtn" class="generate-btn" type="button">
+            <div class="local-status">
+              <span class="status-dot" id="statusDot"></span>
+              <span id="statusText">Local model not loaded</span>
+            </div>
+            <button id="generateBtn" class="generate-btn" type="button" disabled>
               <span class="generate-icon" aria-hidden="true">✦</span>
-              Generate
+              Generate locally
             </button>
           </div>
+        </div>
+      </section>
+
+      <section class="generation-progress" id="generationProgress" hidden>
+        <div class="progress-track"><div class="progress-fill" id="generationFill"></div></div>
+        <div class="progress-row">
+          <span id="generationLabel">Generating locally…</span>
+          <button id="cancelBtn" class="text-btn" type="button">Cancel</button>
         </div>
       </section>
 
       <section class="results-section" id="resultsSection" hidden>
         <div class="section-heading">
           <div>
-            <p class="eyebrow">YOUR CREATIONS</p>
-            <h2>Generated images</h2>
+            <p class="eyebrow">IN-MEMORY RESULT</p>
+            <h2>Your image</h2>
           </div>
           <button id="generateAgainBtn" class="ghost-btn" type="button">Generate again</button>
         </div>
-        <div class="results-grid" id="resultsGrid" aria-live="polite"></div>
-      </section>
 
-      <section class="recent-section" id="recentSection" hidden>
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">LOCAL HISTORY</p>
-            <h2>Recent generations</h2>
+        <article class="image-card">
+          <div class="image-frame square-frame">
+            <img id="resultImage" alt="Locally generated image">
+            <div class="image-placeholder" id="imagePlaceholder">Your image will appear here.</div>
           </div>
-        </div>
-        <div class="recent-grid" id="recentGrid"></div>
+          <div class="card-bar">
+            <div class="card-meta">
+              <strong id="resultMeta">SD‑Turbo</strong>
+              <span id="resultSubmeta">Generated on this device</span>
+            </div>
+            <div class="card-actions">
+              <button id="downloadBtn" class="icon-action" type="button">Save image</button>
+            </div>
+          </div>
+        </article>
       </section>
 
-      <section class="about-strip">
-        <div>
-          <strong>Open source by design.</strong>
-          <span>The interface is MIT-licensed and runs as a static GitHub Pages site.</span>
-        </div>
-        <div>
-          <strong>No OpenAI model weights.</strong>
-          <span>SunCanvas is an independent app using free/open image-generation services.</span>
-        </div>
-        <div>
-          <strong>No app server.</strong>
-          <span>No passwords, database, or private API key are stored by this project.</span>
+      <section class="privacy-details">
+        <p class="eyebrow">WHAT “PRIVATE” MEANS HERE</p>
+        <div class="about-strip">
+          <div>
+            <strong>No identity required.</strong>
+            <span>No login, account, API token, email address, or payment information is requested.</span>
+          </div>
+          <div>
+            <strong>Prompts stay in the tab.</strong>
+            <span>Prompts are passed to the local model in browser memory and are not saved to localStorage.</span>
+          </div>
+          <div>
+            <strong>Images stay local.</strong>
+            <span>Generated images exist as local browser blobs until you save them or clear/close the session.</span>
+          </div>
+          <div>
+            <strong>No tracking stack.</strong>
+            <span>This project contains no analytics SDK, ad tracker, telemetry endpoint, or application database.</span>
+          </div>
         </div>
       </section>
     </main>
 
     <footer>
       <span>SunCanvas</span>
-      <span>Image generation powered by Pollinations.ai.</span>
-      <span>Not affiliated with OpenAI.</span>
+      <span>Local inference powered by WebGPU + SD‑Turbo.</span>
+      <span>Independent project · not affiliated with OpenAI.</span>
     </footer>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-  <script src="./app.js" defer></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

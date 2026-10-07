@@ -32,8 +32,13 @@ jobs:
           grep -q "No API key" README.md
           grep -q "text_encoder_int8.onnx" app.js
           grep -q "unet_int8.onnx" app.js
+          grep -q "@huggingface/tokenizers@0.2.0" app.js
+          grep -q "tokenizer/tokenizer.json" app.js
+          grep -q "tokenizer/tokenizer_config.json" app.js
           ! grep -Rni "pollinations" index.html app.js styles.css README.md
           ! grep -Rni "sd-turbo-ort-web" app.js
+          ! grep -Rni "AutoTokenizer" app.js
+          ! grep -Rni "@huggingface/transformers" app.js
           ! grep -Rni "localStorage" app.js
           ! grep -Rni "web-txt2img" app.js
           ! grep -Rni "esm.sh" app.js

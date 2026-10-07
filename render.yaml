@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: assestanttest
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: MAX_SESSIONS
+        value: "8"
+      - key: SESSION_IDLE_MS
+        value: "900000"

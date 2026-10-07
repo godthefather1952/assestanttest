@@ -1,4 +1,4 @@
-name: Validate browser app
+name: Validate static image app
 
 on:
   push:
@@ -12,9 +12,18 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npm install --ignore-scripts
-      - run: npm run check
+      - name: Check JavaScript syntax
+        run: node --check app.js
+      - name: Verify required static files
+        run: |
+          test -s index.html
+          test -s styles.css
+          test -s app.js
+          test -s README.md
+          test -s LICENSE
+          grep -q "SunCanvas" index.html
+          grep -q "Pollinations" README.md

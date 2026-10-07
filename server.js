@@ -586,8 +586,16 @@ app.get("/api/state", async (req, res) => {
           width: rect.width,
           height: rect.height,
           inputMode,
-          enterKeyHint: el.enterKeyHint || ""
+          enterKeyHint: el.enterKeyHint || "",
+          kind: tagNameFor(el),
+          type
         });
+
+        function tagNameFor(node) {
+          if (node.tagName?.toLowerCase() === "textarea") return "textarea";
+          if (node.isContentEditable) return "textarea";
+          return "input";
+        }
       }
 
       return items;

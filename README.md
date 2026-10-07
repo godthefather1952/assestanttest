@@ -1,94 +1,100 @@
-# SunCanvas
+# NIGHTSHIFT v1
 
-SunCanvas is a privacy-first, open-source image generator designed to run AI image generation locally in the visitor's browser.
+A mobile-first Solana opportunity desk that runs as a static webpage. NIGHTSHIFT discovers live markets, performs checks it can actually verify, calculates deterministic Momentum and Opportunity scores, and presents the best setups in a minimalist Mission Control interface.
 
-It is an independent project. It does **not** contain, copy, or reproduce OpenAI's proprietary GPT Image weights, training data, source code, or internal model implementation.
+## v1 scope
 
-## Privacy design
+- Single mobile webpage; no build step
+- Apple-like Mission Control Lite dark UI
+- Live DexScreener market data
+- Basic Pump/PumpSwap identification from DexScreener markets
+- Public Solana RPC safety verification where available
+- Mint authority and freeze authority checks
+- Raw top-10 token-account concentration (informational; pools/vaults are not fully classified in v1)
+- Dynamic liquidity guardrail
+- Momentum score from 5m buy/sell pressure, volume pace, transaction activity, price acceleration and locally observed liquidity change
+- Opportunity score combining Safety, Momentum and Liquidity quality
+- SNIPE / MOMENTUM / RUNNER / PASS classification
+- Review screen with Approve / Reject
+- Approval starts local tracking only; **no wallet transaction is sent**
+- $10 default tracking size, $35 maximum
+- Maximum 3 tracked positions
+- $35 daily tracked-loss halt for new approvals
+- Local browser history and evaluation records
+- JSON history export
 
-SunCanvas deliberately does not use an image-generation API.
+## Data sources
 
-- No API key
-- No login or user account
-- No application backend
-- No prompt upload
-- No generated-image upload
-- No prompt history in `localStorage`
-- No analytics, ad tracker, telemetry SDK, or application database
-- Generated images are held as in-memory browser blobs until the user saves them or clears/closes the tab
-- Model files are cached locally by the browser so they do not need to be fetched for every generation
+NIGHTSHIFT is keyless-first:
 
-### Network boundary
+1. **DexScreener public API** supplies live Solana pair data such as price, liquidity, volume, recent transactions, pair age and token metadata.
+2. **Public Solana JSON-RPC** is used to verify mint/freeze authority and read largest token accounts.
 
-The first time the model is loaded, the browser downloads the open model/runtime files. Those download hosts can observe ordinary network metadata such as the visitor's IP address, just as any website/CDN can.
+Pump.fun discovery in this version is deliberately conservative. The app identifies Pump/PumpSwap markets present in the public DexScreener feed and uses a Pump search fallback. It does **not** claim to be a complete firehose of every newly created Pump.fun token. A direct real-time PumpPortal stream currently requires an API key even though new-token subscriptions themselves are free, so that dependency is intentionally excluded from the keyless MVP.
 
-The prompt itself is **not** part of those downloads. Once the files are available, prompt processing and image generation happen locally.
+## Safety model
 
-A public web page cannot truthfully promise that the visitor's IP address is invisible to GitHub Pages, a CDN, or the model file host. SunCanvas instead keeps the sensitive part—the prompt and generated image—out of a remote inference service.
+NIGHTSHIFT never invents a pass for data it cannot verify. In v1:
 
-## Local model
+**Hard/verified checks**
+- Minimum liquidity
+- Mint authority
+- Freeze authority
 
-The current private engine uses **SDXS-512-0.9 INT8**, a one-step distilled text-to-image model exported for ONNX Runtime.
+**Visible but limited**
+- Raw top-10 token-account concentration. This may include pool/vault accounts, so it is treated cautiously rather than represented as definitive insider ownership.
 
-Browser model bundle:
+**Marked unverified in v1**
+- Deployer history
+- Insider/bundle clustering
+- Transfer restrictions / honeypot behavior beyond what can be established by the current sources
 
-- INT8 CLIP text encoder: ~342 MB
-- INT8 UNet: ~330 MB
-- Tiny VAE decoder: ~5 MB
-- Total: ~680 MB
-- Fixed output: 512 × 512
-- Execution: ONNX Runtime Web CPU/WASM
-- Seeded local generation
+If Solana RPC verification fails, the Opportunity score is capped and the setup cannot become **Ready** for approval.
 
-The app intentionally loads the text encoder, UNet, and decoder **sequentially during each generation** and releases each ONNX session before opening the next one. This avoids the previous SD-Turbo design's attempt to allocate a ~1.7 GB single model buffer.
+## Scoring
 
-The model files come from `Fcouprie/sdxs-512-texte-image` and the pipeline follows the one-step SDXS reconstruction described by that model's reference implementation.
+Momentum uses recent market measurements, not an LLM. The score considers:
 
-## Why SDXS replaced SD-Turbo
+- 5m buy/sell pressure
+- 5m volume relative to the current hourly pace
+- 5m transaction activity
+- 5m price acceleration, with an overheating penalty
+- Liquidity change between local snapshots when available
 
-The previous browser build used an SD-Turbo ONNX export whose text encoder alone required a 1,733,430,199-byte allocation in the WASM heap on some browsers. That can exceed practical browser/WASM memory limits.
+Opportunity combines approximately:
 
-SDXS uses separately quantized components and is explicitly published for `onnxruntime-web`/CPU use.
+- 48% Safety
+- 42% Momentum
+- 10% Liquidity quality
 
-## Device requirements
+Hard safety failures cap the score. Unverified on-chain safety also caps the score below the Ready threshold.
 
-A modern 64-bit browser with WebAssembly and enough available memory/storage is required.
+## Local state
 
-The initial model download is about 680 MB. The reference model author reports roughly 8–11 seconds per image on CPU in their environment; actual speed varies widely by device and browser.
+Browser storage is used for positions, desk decisions, evaluated-token snapshots and outcome tracking. Use **History → Export** to download the locally stored NIGHTSHIFT dataset as JSON.
 
-## Run locally
+Clearing site data will clear local NIGHTSHIFT history unless it has been exported.
 
-This project is a static site. Serve the repository over HTTP(S), for example:
+## Run
 
-```bash
-python3 -m http.server 8000
-```
+No install or build process is required. Serve the repository as a static site or enable GitHub Pages from the repository root.
 
-Then open:
+For local testing, any basic static file server works. Opening `index.html` directly can work, but an HTTP(S) origin is preferred because browsers apply stricter network rules to `file://` pages.
 
-`http://localhost:8000`
+## Guardrails locked for this build
 
-## Deploy
+| Rule | Value |
+|---|---:|
+| Normal tracking size | $10 |
+| Maximum tracking size | $35 |
+| Maximum open positions | 3 |
+| Daily tracked-loss halt | $35 |
+| Base minimum liquidity | $10,000 |
+| Wallet execution | Disabled |
+| Automated exits | Disabled |
+| Social scraping | Disabled |
+| Deep historical whale intelligence | Disabled |
 
-The repository root is designed to be served directly by GitHub Pages.
+## Important v1 limitation
 
-## License
-
-The SunCanvas application code is MIT licensed. See [LICENSE](./LICENSE).
-
-Third-party libraries and model weights retain their own licenses. The SDXS model repository declares OpenRAIL++ and documents additional provenance/licensing considerations; review its model card before commercial redistribution.
-
-## Acknowledgements
-
-- Fcouprie / SDXS-512 ONNX INT8 export
-- IDKiro / SDXS-512-0.9
-- ONNX Runtime Web
-- Hugging Face Tokenizers.js
-- TAESD
-
-SunCanvas is not affiliated with or endorsed by OpenAI.
-
-
-## Tokenizer implementation
-
-SunCanvas loads `tokenizer/tokenizer.json` and `tokenizer/tokenizer_config.json` directly from the same SDXS ONNX bundle and constructs the tokenizer with the lightweight `@huggingface/tokenizers` browser package. It does not use `AutoTokenizer` or model-class inference.
+This is an opportunity-analysis and local tracking interface, not an autonomous trading system. It does not connect to a wallet, place orders, or guarantee that a token is safe. Scores are deterministic heuristics based on the data available to the browser and should be treated as measurements to inspect, not facts about future performance.

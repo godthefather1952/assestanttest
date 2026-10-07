@@ -1,184 +1,129 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#080809">
-  <meta name="referrer" content="no-referrer">
-  <meta name="description" content="SunCanvas is a private, open-source AI image generator that runs locally in your browser.">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <title>SunCanvas — Private Local AI Images</title>
-  <link rel="stylesheet" href="./styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>NIGHTSHIFT</title>
+<style>
+:root{color-scheme:dark;--bg:#07090d;--card:#101720;--line:#ffffff12;--text:#f6f8fb;--muted:#8591a2;--g:#6ff0bd;--b:#78b9ff;--y:#e7c56f;--r:#ff8585;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text)}body{min-height:100vh;background:radial-gradient(600px 300px at 90% -10%,#104a3c55,transparent),var(--bg)}
+button,input{font:inherit;color:inherit}.app{width:min(100%,560px);margin:auto;padding:calc(24px + env(safe-area-inset-top)) 16px calc(92px + env(safe-area-inset-bottom));min-height:100vh}
+.top,.head,.token,.sum,.actions{display:flex;align-items:center;justify-content:space-between}.ey{font-size:9px;letter-spacing:.18em;color:#647082;margin:0 0 5px}.brand{font-size:21px;letter-spacing:.24em;margin:0}.live{border:1px solid #6ff0bd35;background:#6ff0bd0d;color:#aef7dc;border-radius:99px;padding:9px 13px;font-size:10px}.live:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--g);margin-right:7px;box-shadow:0 0 12px var(--g)}
+.sum,.card,.funnel,.notice,.stats{background:linear-gradient(145deg,#131b24ee,#0b1016f5);border:1px solid var(--line);box-shadow:0 18px 55px #0005}.sum{border-radius:20px;padding:14px;margin:18px 0 13px}.sum div{width:33.33%;text-align:center;border-right:1px solid var(--line)}.sum div:last-child{border:0}.sum strong{display:block;font-size:18px}.sum small{color:var(--muted);font-size:8px}.good{color:var(--g)}.bad{color:var(--r)}
+.card{border-radius:26px;padding:17px;margin-bottom:13px}.head{font-size:14px;margin-bottom:17px}.muted{color:var(--muted);font-size:9px}.token{gap:11px;justify-content:flex-start}.avatar{width:55px;height:55px;border-radius:50%;overflow:hidden;background:#17212c;border:1px solid #6ff0bd33;display:grid;place-items:center;font-weight:800;flex:0 0 auto}.avatar img{width:100%;height:100%;object-fit:cover}.tokentxt{flex:1}.tokentxt h2{margin:0;font-size:23px}.tokentxt p{margin:3px 0;color:var(--muted);font-size:9px}.pill{font-size:8px;border:1px solid #78b9ff55;background:#78b9ff12;color:#a5d1ff;border-radius:99px;padding:4px 7px;margin-left:6px;vertical-align:middle}.score{width:64px;height:64px;border-radius:18px;border:1px solid #6ff0bd22;background:#6ff0bd0d;display:grid;place-content:center;text-align:center}.score b{font-size:28px;color:var(--g);line-height:1}.score small{font-size:7px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0}.metric{border:1px solid var(--line);background:#ffffff05;border-radius:13px;padding:9px 7px}.metric small{display:block;color:var(--muted);font-size:7px}.metric b{font-size:14px}.signals{display:grid;gap:6px;margin:12px 2px}.sig{font-size:10px;color:#cbd3dc}.sig:before{content:"↗";color:var(--g);margin-right:7px}.sig.warn:before{content:"!";color:var(--y)}
+.primary,.secondary{height:45px;border-radius:15px;font-weight:750;border:0}.primary{width:100%;background:linear-gradient(135deg,var(--g),#5cdba7);color:#07100d}.primary:disabled{opacity:.35}.secondary{background:#ffffff08;border:1px solid var(--line)}
+.funnel{border-radius:19px;padding:13px;display:grid;grid-template-columns:repeat(3,1fr);margin-bottom:20px}.funnel div{text-align:center;border-right:1px solid var(--line)}.funnel div:last-child{border:0}.funnel small{display:block;color:var(--muted);font-size:8px}.funnel b{font-size:17px}.section{display:flex;justify-content:space-between;align-items:center;margin:0 4px 10px}.section h3{margin:0;font-size:16px}.textbtn{border:0;background:none;color:var(--muted);font-size:9px}.rows{display:grid;gap:8px}.row,.candidate,.position{border:1px solid var(--line);background:#0f151cee;border-radius:17px;padding:12px}.row{display:flex;justify-content:space-between;align-items:center}.row strong,.candidate strong{font-size:11px}.row small,.candidate small{display:block;color:var(--muted);font-size:8px;margin-top:2px}.guard{margin-top:15px;padding:12px;border:1px solid var(--line);border-radius:16px;color:var(--muted);font-size:8px}.guard b{float:right;color:var(--text)}
+.view{display:none}.view.on{display:block}.page{display:flex;justify-content:space-between;align-items:end;margin:2px 4px 14px}.page h2{margin:3px 0 0;font-size:24px}.search{display:flex;border:1px solid var(--line);background:#111821;border-radius:15px;padding:6px 7px 6px 12px;margin-bottom:10px}.search input{flex:1;min-width:0;border:0;outline:0;background:none;font-size:11px}.search button{width:34px;border:0;border-radius:11px;background:#ffffff09}.chips{display:flex;gap:6px;overflow:auto;margin-bottom:11px}.chip{border:1px solid var(--line);background:#ffffff05;border-radius:99px;padding:7px 11px;color:var(--muted);font-size:8px}.chip.on{color:var(--g);border-color:#6ff0bd33;background:#6ff0bd0d}
+.candidate{cursor:pointer}.ctop{display:flex;justify-content:space-between}.cscore{font-size:20px!important;color:var(--g)}.cm{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:9px;padding-top:8px;border-top:1px solid var(--line)}.cm small{font-size:7px}.cm b{font-size:9px}.notice{border-radius:16px;padding:12px;margin-bottom:11px}.notice p{font-size:9px;line-height:1.4;color:var(--muted);margin:3px 0}
+.position .ptop{display:flex;justify-content:space-between}.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:9px}.pgrid div{background:#ffffff05;border-radius:10px;padding:8px}.pgrid small{display:block;font-size:7px;color:var(--muted)}.pgrid b{font-size:9px}.closepos{width:100%;height:34px;margin-top:8px;border:1px solid var(--line);border-radius:11px;background:#ffffff05;font-size:9px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border-radius:16px;padding:11px;margin-bottom:12px}.stats div{text-align:center;border-right:1px solid var(--line)}.stats div:last-child{border:0}.stats small{display:block;color:var(--muted);font-size:7px}.stats b{font-size:15px}.hist{display:grid;grid-template-columns:7px 1fr auto;gap:8px;border-bottom:1px solid var(--line);padding:10px 2px}.dot{width:7px;height:7px;border-radius:50%;background:#667486;margin-top:4px}.hist.APPROVED .dot,.hist.WIN .dot{background:var(--g)}.hist.REJECTED .dot,.hist.LOSS .dot{background:var(--r)}.hist strong{font-size:9px}.hist span{font-size:8px;color:var(--muted)}
+.nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,560px);height:calc(68px + env(safe-area-inset-bottom));padding:7px 12px env(safe-area-inset-bottom);background:#070a0eea;border-top:1px solid var(--line);backdrop-filter:blur(20px);display:grid;grid-template-columns:repeat(4,1fr);z-index:20}.nav button{border:0;background:none;color:#6e7a8b;font-size:8px}.nav button b{display:block;font-size:18px;margin-bottom:2px}.nav button.on{color:var(--g)}
+.backdrop{position:fixed;inset:0;background:#0009;backdrop-filter:blur(7px);z-index:50;display:flex;align-items:flex-end;justify-content:center}.hidden{display:none!important}.sheet{width:min(100%,560px);max-height:92vh;overflow:auto;background:#0d1218;border-radius:27px 27px 0 0;border:1px solid var(--line);padding:10px 16px calc(20px + env(safe-area-inset-bottom))}.handle{width:36px;height:4px;background:#394451;border-radius:99px;margin:0 auto 10px}.x{float:right;border:1px solid var(--line);background:#ffffff05;border-radius:50%;width:31px;height:31px}.reviewtop{display:flex;justify-content:space-between;align-items:center;margin:41px 0 10px}.reviewtop h2{margin:0;font-size:24px}.reviewtop p{font-size:9px;color:var(--muted);margin:3px 0}.block{margin:14px 0}.block h4{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#adb7c3;margin:0 0 7px}.reason{font-size:9px;line-height:1.45;margin:5px 0;color:#cbd3dc}.reason:before{content:"•";color:var(--g);margin-right:7px}.warn .reason:before{color:var(--y)}.table{border:1px solid var(--line);border-radius:14px;overflow:hidden}.tr,.check{display:flex;justify-content:space-between;padding:8px 9px;border-bottom:1px solid var(--line);font-size:8px}.tr:last-child{border:0}.tr span,.check span{color:var(--muted)}.checks{margin-top:11px}.check{border:0;padding:5px 1px}.pass{color:var(--g)}.fail{color:var(--r)}.unknown{color:var(--y)}.sizes{display:flex;gap:5px;margin:14px 0}.sizes button{flex:1;border:1px solid var(--line);background:#ffffff05;border-radius:10px;padding:8px}.sizes button.on{color:var(--g);border-color:#6ff0bd33}.actions{gap:7px}.actions .secondary{width:40%}.actions .primary{width:60%}.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);z-index:100;background:#19222c;border:1px solid var(--line);border-radius:11px;padding:9px 12px;font-size:9px}
+</style>
 </head>
-<body>
-  <div class="app-shell">
-    <header class="topbar">
-      <a class="brand" href="./" aria-label="SunCanvas home">
-        <span class="brand-mark" aria-hidden="true">✦</span>
-        <span>SunCanvas</span>
-      </a>
-      <div class="top-actions">
-        <button class="ghost-btn" id="clearSessionBtn" type="button">Clear session</button>
-        <a class="ghost-btn" href="https://github.com/godthefather1952/assestanttest" target="_blank" rel="noreferrer">Source</a>
-      </div>
-    </header>
+<body><main class="app">
+<header class="top"><div><p class="ey">SOLANA DESK</p><h1 class="brand">NIGHTSHIFT</h1></div><button class="live" id="refresh">LIVE</button></header>
+<section class="sum"><div><strong id="pnl" class="good">+$0.00</strong><small>tracked P&amp;L</small></div><div><strong id="posCount">0</strong><small>positions</small></div><div><strong id="desk">Scanning</strong><small id="deskSub">risk rules active</small></div></section>
 
-    <main>
-      <section class="hero">
-        <p class="eyebrow">LOCAL · PRIVATE · NO ACCOUNT · NO API KEY</p>
-        <h1>Your prompt stays with you.</h1>
-        <p class="hero-copy">SunCanvas runs an open-weight image model on your own device with CPU/WASM inference. Your prompt and generated image are not sent to an image-generation server.</p>
-      </section>
+<section class="view on" id="home">
+<article class="card"><div class="head"><span>Best Opportunity</span><span class="muted" id="rank">WAITING FOR DATA</span></div><div id="hero"><p class="muted" style="text-align:center;padding:32px 8px">Scanning live Solana markets…</p></div></article>
+<section class="funnel"><div><small>Scanning</small><b id="scanned">0</b></div><div><small>Cleared</small><b id="cleared">0</b></div><div><small>Ready</small><b id="ready">0</b></div></section>
+<div class="section"><h3>Open Positions</h3><button class="textbtn" data-go="positions"><span id="homePos">0</span> total ›</button></div><div class="rows" id="homePositions"></div>
+<div class="guard">DAILY LOSS HALT <b id="lossLeft">$35.00 remaining</b><br><br>$10 normal · $35 max · 3 positions maximum</div>
+</section>
 
-      <section class="privacy-banner">
-        <div class="privacy-icon" aria-hidden="true">◉</div>
-        <div class="privacy-copy">
-          <strong>Private generation</strong>
-          <span>No account, API key, prompt history, analytics, cookies, or server-side inference.</span>
-        </div>
-        <div class="privacy-state" id="privacyState">Checking device…</div>
-      </section>
+<section class="view" id="discover">
+<div class="page"><div><p class="ey">DISCOVER</p><h2>Live Candidates</h2></div><span id="candCount">0</span></div>
+<form class="search" id="searchForm"><input id="searchInput" placeholder="Search symbol or paste token CA"><button>⌕</button></form>
+<div class="chips"><button type="button" class="chip on" data-filter="all">All</button><button type="button" class="chip" data-filter="ready">Ready</button><button type="button" class="chip" data-filter="pump">Pump</button><button type="button" class="chip" data-filter="rejected">Rejected</button></div>
+<div class="rows" id="candidates"></div>
+</section>
 
-      <section class="model-panel" aria-label="Local model">
-        <div class="model-copy">
-          <p class="eyebrow">LOCAL MODEL</p>
-          <h2>SDXS‑512 INT8 · 512 × 512</h2>
-          <p>The first time, your browser downloads about 680 MB of quantized model files and caches them locally. During generation, SunCanvas loads one model stage at a time to keep memory use much lower.</p>
-        </div>
-        <div class="model-actions">
-          <button class="generate-btn" id="loadModelBtn" type="button">Download local model</button>
-          <button class="ghost-btn" id="removeModelBtn" type="button">Remove cached model</button>
-        </div>
-        <div class="model-progress" id="modelProgress" hidden>
-          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-          <div class="progress-row">
-            <span id="progressLabel">Preparing…</span>
-            <span id="progressValue"></span>
-          </div>
-        </div>
-        <p class="network-note">Privacy note: the first model download contacts the model host, which can see normal network metadata such as your IP address. Your prompt is not included in that download request.</p>
-        <details class="load-details" id="loadDetails" hidden>
-          <summary>Technical details</summary>
-          <pre id="loadError"></pre>
-        </details>
-      </section>
+<section class="view" id="positions">
+<div class="page"><div><p class="ey">POSITIONS</p><h2>Tracked Trades</h2></div><span id="posBadge">0/3</span></div>
+<div class="notice"><p><b>Tracking only.</b> NIGHTSHIFT v1 never connects to a wallet or sends a transaction. Approve starts local P&amp;L tracking at the observed market price.</p></div>
+<div class="rows" id="positionsList"></div>
+</section>
 
-      <section class="studio" aria-label="Image generator">
-        <div class="composer">
-          <label class="sr-only" for="prompt">Image prompt</label>
-          <textarea id="prompt" rows="5" maxlength="1500" placeholder="Describe the image you want to create…" autocomplete="off" spellcheck="true"></textarea>
+<section class="view" id="history">
+<div class="page"><div><p class="ey">HISTORY</p><h2>Desk Log</h2></div><button class="textbtn" id="export">Export</button></div>
+<section class="stats"><div><small>REVIEWED</small><b id="reviewed">0</b></div><div><small>APPROVED</small><b id="approved">0</b></div><div><small>REJECTED</small><b id="rejected">0</b></div></section>
+<div id="historyList"></div>
+</section>
 
-          <div class="prompt-tools">
-            <div class="preset-row" aria-label="Style presets">
-              <button class="chip active" type="button" data-style="auto">Auto</button>
-              <button class="chip" type="button" data-style="photo">Photo</button>
-              <button class="chip" type="button" data-style="cinematic">Cinematic</button>
-              <button class="chip" type="button" data-style="editorial">Editorial</button>
-              <button class="chip" type="button" data-style="illustration">Illustration</button>
-              <button class="chip" type="button" data-style="anime">Anime</button>
-              <button class="chip" type="button" data-style="3d">3D</button>
-            </div>
-            <button id="surpriseBtn" class="text-btn" type="button">Surprise me</button>
-          </div>
+<nav class="nav"><button class="on" data-nav="home"><b>⌂</b>Home</button><button data-nav="discover"><b>⌕</b>Discover</button><button data-nav="positions"><b>▥</b>Positions</button><button data-nav="history"><b>◷</b>History</button></nav>
+</main>
+<div class="backdrop hidden" id="backdrop"><section class="sheet"><div class="handle"></div><button class="x" id="close">×</button><div id="review"></div></section></div>
+<div class="toast hidden" id="toast"></div>
 
-          <div class="controls-grid local-controls">
-            <label class="control">
-              <span>Model</span>
-              <div class="fixed-control">SDXS‑512 INT8 · local CPU</div>
-            </label>
-            <label class="control">
-              <span>Image size</span>
-              <div class="fixed-control">512 × 512</div>
-            </label>
-            <label class="control">
-              <span>Seed</span>
-              <div class="seed-row">
-                <input id="seed" inputmode="numeric" pattern="[0-9]*" placeholder="Random" autocomplete="off">
-                <button id="randomSeedBtn" class="mini-btn" type="button">↻</button>
-              </div>
-            </label>
-          </div>
-
-          <div class="composer-footer">
-            <div class="local-status">
-              <span class="status-dot" id="statusDot"></span>
-              <span id="statusText">Local model not loaded</span>
-            </div>
-            <button id="generateBtn" class="generate-btn" type="button" disabled>
-              <span class="generate-icon" aria-hidden="true">✦</span>
-              Generate locally
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section class="generation-progress" id="generationProgress" hidden>
-        <div class="progress-track"><div class="progress-fill" id="generationFill"></div></div>
-        <div class="progress-row">
-          <span id="generationLabel">Generating locally…</span>
-          <button id="cancelBtn" class="text-btn" type="button">Cancel</button>
-        </div>
-      </section>
-
-      <section class="results-section" id="resultsSection" hidden>
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">IN-MEMORY RESULT</p>
-            <h2>Your image</h2>
-          </div>
-          <button id="generateAgainBtn" class="ghost-btn" type="button">Generate again</button>
-        </div>
-
-        <article class="image-card">
-          <div class="image-frame square-frame">
-            <img id="resultImage" alt="Locally generated image">
-            <div class="image-placeholder" id="imagePlaceholder">Your image will appear here.</div>
-          </div>
-          <div class="card-bar">
-            <div class="card-meta">
-              <strong id="resultMeta">SDXS‑512 INT8</strong>
-              <span id="resultSubmeta">Generated on this device</span>
-            </div>
-            <div class="card-actions">
-              <button id="downloadBtn" class="icon-action" type="button">Save image</button>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section class="privacy-details">
-        <p class="eyebrow">WHAT “PRIVATE” MEANS HERE</p>
-        <div class="about-strip">
-          <div>
-            <strong>No identity required.</strong>
-            <span>No login, account, API token, email address, or payment information is requested.</span>
-          </div>
-          <div>
-            <strong>Prompts stay in the tab.</strong>
-            <span>Prompts are passed to the local model in browser memory and are not saved to localStorage.</span>
-          </div>
-          <div>
-            <strong>Images stay local.</strong>
-            <span>Generated images exist as local browser blobs until you save them or clear/close the session.</span>
-          </div>
-          <div>
-            <strong>No tracking stack.</strong>
-            <span>This project contains no analytics SDK, ad tracker, telemetry endpoint, or application database.</span>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      <span>SunCanvas</span>
-      <span>Local inference powered by ONNX Runtime Web + SDXS‑512 INT8.</span>
-      <span>Independent project · not affiliated with OpenAI. · Build 2026.10.07-v2</span>
-    </footer>
-  </div>
-
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="./app-sdxs-20261007-v2.js"></script>
-</body>
-</html>
+<script>
+(function(){
+'use strict';
+var DEX='https://api.dexscreener.com',RPC=['https://api.mainnet-beta.solana.com','https://api.mainnet.solana.com'],KEY='nightshift_v1',MAXPOS=3,MAXSIZE=35,LOSS=35,MINLIQ=10000,READY=78;
+function $(s,r){return (r||document).querySelector(s)} function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function day(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fresh(){return{positions:[],history:[],evaluations:{},snapshots:{},dismissed:{},daily:{date:day(),realized:0},candidates:[],filter:'all',size:10,last:0}}
+function load(){try{var x=JSON.parse(localStorage.getItem(KEY));return x?Object.assign(fresh(),x,{candidates:[]}):fresh()}catch(e){return fresh()}}
+var S=load(),busy=false;
+function save(){try{localStorage.setItem(KEY,JSON.stringify({positions:S.positions,history:S.history.slice(0,250),evaluations:S.evaluations,snapshots:S.snapshots,dismissed:S.dismissed,daily:S.daily,last:S.last}))}catch(e){}}
+function resetDay(){if(S.daily.date!==day()){S.daily={date:day(),realized:0};S.positions.forEach(function(p){p.dayBasis=p.current||p.entry});save()}}
+function get(url,opt){var c=new AbortController(),t=setTimeout(function(){c.abort()},9000);opt=opt||{};opt.signal=c.signal;opt.cache='no-store';return fetch(url,opt).then(function(r){if(!r.ok)throw Error(r.status);return r.json()}).finally(function(){clearTimeout(t)})}
+function rpc(method,params){var i=0;function next(){if(i>=RPC.length)return Promise.reject(Error('RPC unavailable'));var u=RPC[i++];return get(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:method,params:params})}).then(function(x){if(x.error)throw Error(x.error.message);return x.result}).catch(next)}return next()}
+function discover(){return Promise.allSettled([get(DEX+'/token-profiles/latest/v1'),get(DEX+'/token-boosts/latest/v1')]).then(function(rs){var a=[];rs.forEach(function(r){if(r.status==='fulfilled'&&Array.isArray(r.value))r.value.forEach(function(x){if(x.chainId==='solana'&&x.tokenAddress&&a.indexOf(x.tokenAddress)<0)a.push(x.tokenAddress)})});return a.slice(0,40)})}
+function pairs(addrs){if(!addrs.length)return Promise.resolve([]);var calls=[];for(var i=0;i<addrs.length;i+=25)calls.push(get(DEX+'/tokens/v1/solana/'+addrs.slice(i,i+25).join(',')).catch(function(){return[]}));return Promise.all(calls).then(function(x){return [].concat.apply([],x)})}
+function choose(ps){var m={};(ps||[]).forEach(function(p){if(!p||p.chainId!=='solana'||!p.baseToken||!p.baseToken.address||!Number(p.priceUsd))return;var a=p.baseToken.address,l=Number(p.liquidity&&p.liquidity.usd||0);if(!m[a]||l>Number(m[a].liquidity&&m[a].liquidity.usd||0))m[a]=p});return Object.keys(m).map(function(k){return m[k]})}
+function isPump(p){return ((p.dexId||'')+' '+(p.labels||[]).join(' ')+' '+(p.url||'')).toLowerCase().indexOf('pump')>=0}
+function age(p){return p.pairCreatedAt?Math.max(0,(Date.now()-Number(p.pairCreatedAt))/60000):null}
+function floor(size){return Math.max(MINLIQ,Number(size||10)*500)}
+function metrics(p,old){var t=p.txns&&p.txns.m5||{},buys=+t.buys||0,sells=+t.sells||0,total=buys+sells,buy=total?buys/total:.5,v5=+(p.volume&&p.volume.m5)||0,v1=+(p.volume&&p.volume.h1)||0,pace=v1?v5/(v1/12):(v5?1:0),pc=+(p.priceChange&&p.priceChange.m5)||0,liq=+(p.liquidity&&p.liquidity.usd)||0,g=old&&old.liquidity?((liq-old.liquidity)/old.liquidity)*100:null;
+var buyS=clamp(buy*100),volS=clamp(35+(pace-.7)*35),actS=clamp(total/40*100),priceS=clamp(50+pc*2.5),liqS=g===null?50:clamp(50+g*2.5);if(pc>35)priceS=clamp(100-(pc-35)*1.5,35,100);
+return{buys:buys,sells:sells,total:total,buy:buy,v5:v5,v1:v1,pace:pace,pc:pc,liq:liq,g:g,activity:Math.round(actS),momentum:Math.round(volS*.32+buyS*.28+actS*.2+priceS*.12+liqS*.08)}}
+function clamp(n,a,b){a=a===undefined?0:a;b=b===undefined?100:b;return Math.max(a,Math.min(b,isFinite(n)?n:a))}
+function liqScore(l){return l>=150000?100:l>=75000?90:l>=50000?82:l>=25000?70:l>=17500?58:l>=10000?48:l>=5000?25:8}
+function verify(a){return Promise.all([rpc('getAccountInfo',[a,{encoding:'jsonParsed',commitment:'confirmed'}]),rpc('getTokenLargestAccounts',[a,{commitment:'confirmed'}])]).then(function(x){var info=x[0]&&x[0].value&&x[0].value.data&&x[0].value.data.parsed&&x[0].value.data.parsed.info;if(!info)throw Error('mint parse');var top=null;try{var supply=BigInt(String(info.supply||0)),sum=(x[1].value||[]).slice(0,10).reduce(function(s,v){return s+BigInt(String(v.amount||0))},0n);if(supply>0n)top=Number(sum*10000n/supply)/100}catch(e){}return{ok:true,mint:info.mintAuthority,freeze:info.freezeAuthority,top:top}}).catch(function(){return{ok:false,mint:null,freeze:null,top:null}})}
+function evaluate(p,v){var m=metrics(p,S.snapshots[p.baseToken.address]),score=100,fails=[],warn=[],checks=[],a=age(p),verified=!!(v&&v.ok);
+if(m.liq<floor(10)){score=0;fails.push('Liquidity is below the $10,000 hard floor.')}else if(m.liq<20000){score-=12;warn.push('Liquidity is only modestly above the desk minimum.')}
+if(a!==null&&a<2){score-=10;warn.push('Pair is less than two minutes old.')}
+checks.push(['Minimum liquidity',m.liq>=floor(10)?'PASS':'FAIL',m.liq>=floor(10)?'pass':'fail']);
+if(verified){if(v.mint){score=0;fails.push('Mint authority is still enabled.')}if(v.freeze){score=0;fails.push('Freeze authority is still enabled.')}checks.push(['Mint authority',v.mint?'ENABLED':'DISABLED',v.mint?'fail':'pass'],['Freeze authority',v.freeze?'ENABLED':'DISABLED',v.freeze?'fail':'pass'],['Top 10 accounts',v.top===null?'UNKNOWN':v.top.toFixed(1)+'% raw',v.top!==null&&v.top<85?'pass':'unknown']);if(v.top>90){score-=22;warn.push('Raw top-10 account concentration is '+v.top.toFixed(1)+'%; pool/vault accounts are not excluded.')}}else{checks.push(['Mint authority','UNVERIFIED','unknown'],['Freeze authority','UNVERIFIED','unknown'],['Top 10 accounts','UNVERIFIED','unknown']);warn.push('On-chain safety could not be verified; this setup cannot become Ready.')}
+checks.push(['Deployer history','NOT VERIFIED IN V1','unknown'],['Insider / bundle clustering','NOT VERIFIED IN V1','unknown'],['Transfer restrictions','NOT VERIFIED IN V1','unknown']);
+score=clamp(score);var ls=liqScore(m.liq),opp=Math.round(score*.48+m.momentum*.42+ls*.10),hard=fails.length>0;if(hard)opp=Math.min(opp,35);if(!verified)opp=Math.min(opp,74);
+var setup='PASS';if(!hard&&verified){if(opp>=84&&m.momentum>=85&&(a===null||a<=15))setup='SNIPE';else if(opp>=READY)setup='MOMENTUM';else if(opp>=72&&a!==null&&a>=30)setup='RUNNER'}
+var reasons=[];if(m.pace>=1.35)reasons.push('5m volume is running at '+m.pace.toFixed(1)+'× its hourly pace.');if(m.buy>=.58&&m.total>=8)reasons.push('Buy pressure is '+Math.round(m.buy*100)+'% across recent transactions.');if(m.liq>=25000)reasons.push('Liquidity has reached '+money(m.liq)+'.');if(verified&&!v.mint&&!v.freeze)reasons.push('Mint and freeze authorities are disabled on-chain.');if(isPump(p))reasons.push('Pump-related market identified in the live feed.');if(!reasons.length)reasons.push('More evidence is still accumulating.');
+return{address:p.baseToken.address,symbol:p.baseToken.symbol||'TOKEN',name:p.baseToken.name||'Unknown token',image:p.info&&p.info.imageUrl||'',dex:p.dexId||'unknown',source:isPump(p)?'Pump via DexScreener':'DexScreener',pump:isPump(p),price:+p.priceUsd||0,age:a,m:m,safety:score,liqScore:ls,opp:opp,setup:setup,ready:!hard&&verified&&opp>=READY,cleared:!hard&&verified&&score>=70,hard:hard,verified:verified,checks:checks,fails:fails,warn:warn,reasons:reasons,pair:p}}
+function refresh(force){if(busy)return;if(!force&&Date.now()-S.last<7000)return;busy=true;$('#refresh').textContent='SCAN';resetDay();discover().then(function(a){return pairs(a)}).then(function(ps){var list=choose(ps);if(!list.length)return get(DEX+'/latest/dex/search?q=pump').then(function(x){return choose(x.pairs||[])});return list}).then(function(list){var cs=list.map(function(p){return evaluate(p,null)}).sort(function(a,b){return b.m.momentum-a.m.momentum}),targets=cs.slice(0,8),seq=Promise.resolve();targets.forEach(function(c){seq=seq.then(function(){return verify(c.address).then(function(v){var i=cs.findIndex(function(x){return x.address===c.address});if(i>=0)cs[i]=evaluate(c.pair,v)})})});return seq.then(function(){S.candidates=cs.sort(function(a,b){return b.opp-a.opp}).slice(0,50);S.last=Date.now();update();save();render()})}).catch(function(e){toast('Live refresh failed. Tap LIVE to retry.');console.warn(e)}).finally(function(){busy=false;$('#refresh').textContent='LIVE'})}
+function update(){var map={};S.candidates.forEach(function(c){map[c.address]=c;var old=S.evaluations[c.address],first=old&&old.firstPrice||c.price,chg=first&&c.price?(c.price/first-1)*100:0;S.evaluations[c.address]={address:c.address,symbol:c.symbol,name:c.name,firstSeen:old&&old.firstSeen||Date.now(),lastSeen:Date.now(),firstPrice:first,latestPrice:c.price,peak:Math.max(old&&old.peak||chg,chg),trough:Math.min(old&&old.trough||chg,chg),opportunity:c.opp,safety:c.safety,momentum:c.m.momentum,decision:old&&old.decision||null,setup:c.setup};S.snapshots[c.address]={time:Date.now(),price:c.price,liquidity:c.m.liq}});S.positions.forEach(function(p){if(map[p.address])p.current=map[p.address].price;if(p.dayDate!==day()){p.dayDate=day();p.dayBasis=p.current||p.entry}})}
+function daily(){return +(S.daily.realized||0)+S.positions.reduce(function(t,p){var c=+(p.current||p.entry),b=+(p.dayBasis||p.entry);return t+(b?+p.amount*(c/b-1):0)},0)}
+function halted(){return daily()<=-LOSS}
+function money(n){n=+n||0;return Math.abs(n)>=1000000?'$'+(n/1000000).toFixed(2)+'M':Math.abs(n)>=1000?'$'+(n/1000).toFixed(1)+'K':'$'+n.toFixed(2)}
+function price(n){n=+n||0;return n>=1?'$'+n.toFixed(4):n>=.01?'$'+n.toFixed(5):n>=.0001?'$'+n.toFixed(7):'$'+n.toPrecision(5)}
+function pct(n){n=+n||0;return(n>=0?'+':'')+n.toFixed(1)+'%'} function signed(n){n=+n||0;return(n>=0?'+':'-')+'$'+Math.abs(n).toFixed(2)}
+function ago(m){return m===null?'age unknown':m<1?'<1m old':m<60?Math.round(m)+'m old':m<1440?(m/60).toFixed(1)+'h old':(m/1440).toFixed(1)+'d old'}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function avatar(c){return c.image?'<div class="avatar"><img src="'+esc(c.image)+'" onerror="this.remove()"></div>':'<div class="avatar">'+esc(c.symbol.charAt(0))+'</div>'}
+function render(){var p=daily();$('#pnl').textContent=signed(p);$('#pnl').className=p<0?'bad':'good';$('#posCount').textContent=S.positions.length;$('#desk').textContent=halted()?'HALTED':'Live';$('#desk').className=halted()?'bad':'';$('#deskSub').textContent=halted()?'$35 daily loss limit':'risk rules active';
+var visible=S.candidates.filter(function(c){return !(S.dismissed[c.address]>Date.now()-86400000)}),best=visible.find(function(c){return c.ready})||visible[0];$('#scanned').textContent=S.candidates.length;$('#cleared').textContent=S.candidates.filter(function(c){return c.cleared}).length;$('#ready').textContent=S.candidates.filter(function(c){return c.ready}).length;$('#homePos').textContent=S.positions.length;$('#lossLeft').textContent=halted()?'HALTED':money(Math.max(0,LOSS-Math.max(0,-p)))+' remaining';
+if(best){$('#rank').textContent=best.ready?'RANK #1':best.verified?'WATCHING':'VERIFYING';$('#hero').innerHTML='<div class="token">'+avatar(best)+'<div class="tokentxt"><h2>'+esc(best.symbol)+' <span class="pill">'+best.setup+'</span></h2><p>'+esc(best.name)+' · '+esc(best.source)+'</p></div><div class="score"><b>'+best.opp+'</b><small>SCORE</small></div></div><div class="grid"><div class="metric"><small>Safety</small><b>'+Math.round(best.safety)+'</b></div><div class="metric"><small>Momentum</small><b>'+best.m.momentum+'</b></div><div class="metric"><small>Liquidity</small><b>'+best.liqScore+'</b></div><div class="metric"><small>Activity</small><b>'+best.m.activity+'</b></div></div><div class="signals">'+best.reasons.slice(0,2).map(function(x){return'<div class="sig">'+esc(x)+'</div>'}).join('')+(best.warn[0]?'<div class="sig warn">'+esc(best.warn[0])+'</div>':'')+'</div><button class="primary" data-review="'+best.address+'">Review →</button>'}else $('#hero').innerHTML='<p class="muted" style="text-align:center;padding:32px 8px">No live candidates yet. Tap LIVE to retry.</p>';
+renderPositions();renderCandidates();renderHistory();bindReviews()}
+function renderPositions(){$('#posBadge').textContent=S.positions.length+'/3';if(!S.positions.length){$('#homePositions').innerHTML='<div class="row"><small>No tracked positions yet.</small></div>';$('#positionsList').innerHTML='<div class="notice"><p>Approve a reviewed setup to begin local tracking.</p></div>';return}
+$('#homePositions').innerHTML=S.positions.slice(0,3).map(function(p){var r=p.entry&&p.current?(p.current/p.entry-1)*100:0;return'<div class="row"><div><strong>'+esc(p.symbol)+'</strong><small>'+money(p.amount)+' tracked</small></div><b class="'+(r>=0?'good':'bad')+'">'+pct(r)+'</b></div>'}).join('');
+$('#positionsList').innerHTML=S.positions.map(function(p){var r=p.entry&&p.current?(p.current/p.entry-1)*100:0,profit=+p.amount*r/100;return'<div class="position"><div class="ptop"><strong>'+esc(p.symbol)+'</strong><b class="'+(profit>=0?'good':'bad')+'">'+signed(profit)+'</b></div><div class="pgrid"><div><small>ENTRY</small><b>'+price(p.entry)+'</b></div><div><small>CURRENT</small><b>'+price(p.current||p.entry)+'</b></div><div><small>RETURN</small><b>'+pct(r)+'</b></div></div><button class="closepos" data-closepos="'+p.address+'">Close tracking</button></div>'}).join('');$$('[data-closepos]').forEach(function(b){b.onclick=function(){closePos(b.dataset.closepos)}})}
+function renderCandidates(){var cs=S.candidates.slice();if(S.filter==='ready')cs=cs.filter(function(c){return c.ready});if(S.filter==='pump')cs=cs.filter(function(c){return c.pump});if(S.filter==='rejected')cs=cs.filter(function(c){return c.hard||c.opp<55});$('#candCount').textContent=S.candidates.length;$('#candidates').innerHTML=cs.slice(0,50).map(function(c){return'<div class="candidate" data-review="'+c.address+'"><div class="ctop"><div><strong>'+esc(c.symbol)+' <span class="pill">'+c.setup+'</span></strong><small>'+esc(c.source)+' · '+ago(c.age)+'</small></div><strong class="cscore">'+c.opp+'</strong></div><div class="cm"><div><small>SAFETY</small><b>'+Math.round(c.safety)+(c.verified?'':'*')+'</b></div><div><small>MOMENTUM</small><b>'+c.m.momentum+'</b></div><div><small>LIQUIDITY</small><b>'+money(c.m.liq)+'</b></div><div><small>5M TX</small><b>'+c.m.total+'</b></div></div></div>'}).join('')||'<div class="notice"><p>No candidates match this view.</p></div>'}
+function log(type,symbol,note){S.history.unshift({type:type,symbol:symbol||'DESK',note:note,time:Date.now()});S.history=S.history.slice(0,250)}
+function renderHistory(){$('#reviewed').textContent=Object.keys(S.evaluations).length;$('#approved').textContent=S.history.filter(function(h){return h.type==='APPROVED'}).length;$('#rejected').textContent=S.history.filter(function(h){return h.type==='REJECTED'}).length;$('#historyList').innerHTML=S.history.slice(0,100).map(function(h){return'<div class="hist '+h.type+'"><i class="dot"></i><div><strong>'+esc(h.symbol)+' · '+esc(h.type)+'</strong><span>'+esc(h.note)+'</span></div><span>'+new Date(h.time).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</span></div>'}).join('')||'<div class="notice"><p>Desk decisions will appear here.</p></div>'}
+function bindReviews(){$$('[data-review]').forEach(function(b){b.onclick=function(){openReview(b.dataset.review)}})}
+function openReview(a){var c=S.candidates.find(function(x){return x.address===a});if(!c)return;S.size=10;drawReview(c);$('#backdrop').classList.remove('hidden')}
+function drawReview(c){var sizeOK=c.m.liq>=floor(S.size),disable=c.hard||!c.verified||!sizeOK||halted()||S.positions.length>=MAXPOS||S.positions.some(function(p){return p.address===c.address});$('#review').innerHTML='<div class="reviewtop"><div><h2>'+esc(c.symbol)+' <span class="pill">'+c.setup+'</span></h2><p>'+esc(c.name)+' · '+esc(c.source)+'</p></div><div class="score"><b>'+c.opp+'</b><small>SCORE</small></div></div><div class="grid"><div class="metric"><small>Safety</small><b>'+Math.round(c.safety)+'</b></div><div class="metric"><small>Momentum</small><b>'+c.m.momentum+'</b></div><div class="metric"><small>Liquidity</small><b>'+c.liqScore+'</b></div><div class="metric"><small>Activity</small><b>'+c.m.activity+'</b></div></div><div class="block"><h4>Why it passed</h4>'+c.reasons.map(function(x){return'<p class="reason">'+esc(x)+'</p>'}).join('')+'</div><div class="block warn"><h4>Concerns</h4>'+c.fails.concat(c.warn).map(function(x){return'<p class="reason">'+esc(x)+'</p>'}).join('')+'</div><div class="table">'+[['Price',price(c.price)],['Liquidity',money(c.m.liq)],['5m volume',money(c.m.v5)],['1h volume',money(c.m.v1)],['5m buys / sells',c.m.buys+' / '+c.m.sells],['Pair age',ago(c.age)],['DEX',c.dex]].map(function(x){return'<div class="tr"><span>'+esc(x[0])+'</span><b>'+esc(x[1])+'</b></div>'}).join('')+'</div><div class="checks">'+c.checks.map(function(x){return'<div class="check"><span>'+esc(x[0])+'</span><b class="'+x[2]+'">'+esc(x[1])+'</b></div>'}).join('')+'</div><div class="sizes"><button data-size="10" class="'+(S.size===10?'on':'')+'">$10</button><button data-size="20" class="'+(S.size===20?'on':'')+'">$20</button><button data-size="35" class="'+(S.size===35?'on':'')+'">$35</button></div><div class="actions"><button class="secondary" id="rejectBtn">Reject</button><button class="primary" id="approveBtn" '+(disable?'disabled':'')+'>'+(halted()?'Desk Halted':c.hard?'Hard Fail':!c.verified?'Safety Unverified':!sizeOK?'Need '+money(floor(S.size))+' Liquidity':'Approve & Track')+'</button></div><p class="muted" style="text-align:center">Approval records and tracks only. It does not buy the token.</p>';
+$$('[data-size]',$('#review')).forEach(function(b){b.onclick=function(){S.size=+b.dataset.size;drawReview(c)}});$('#rejectBtn').onclick=function(){S.dismissed[c.address]=Date.now();if(S.evaluations[c.address])S.evaluations[c.address].decision='REJECTED';log('REJECTED',c.symbol,c.fails[0]||'Manually rejected.');save();$('#backdrop').classList.add('hidden');render();toast(c.symbol+' rejected for 24 hours.')};$('#approveBtn').onclick=function(){approve(c)}}
+function approve(c){if(c.hard||!c.verified||halted()||S.positions.length>=MAXPOS||c.m.liq<floor(S.size))return;S.positions.push({address:c.address,symbol:c.symbol,name:c.name,amount:Math.min(S.size,MAXSIZE),entry:c.price,current:c.price,opened:Date.now(),dayDate:day(),dayBasis:c.price});if(S.evaluations[c.address])S.evaluations[c.address].decision='APPROVED';log('APPROVED',c.symbol,money(S.size)+' tracking started at '+price(c.price)+'. No wallet transaction sent.');save();$('#backdrop').classList.add('hidden');render();toast(c.symbol+' approved for tracking.')}
+function closePos(a){var i=S.positions.findIndex(function(p){return p.address===a});if(i<0)return;var p=S.positions[i],cur=p.current||p.entry,total=p.amount*(cur/p.entry-1),dayp=p.amount*(cur/(p.dayBasis||p.entry)-1);S.daily.realized+=dayp;S.positions.splice(i,1);log(total>=0?'WIN':'LOSS',p.symbol,'Tracking closed '+signed(total)+' ('+pct((cur/p.entry-1)*100)+').');save();render();toast(p.symbol+' tracking closed.')}
+function search(s){s=String(s||'').trim();if(!s)return;var req=/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s)?pairs([s]):get(DEX+'/latest/dex/search?q='+encodeURIComponent(s)).then(function(x){return x.pairs||[]});req.then(function(ps){var cs=choose(ps).slice(0,8).map(function(p){return evaluate(p,null)}),seq=Promise.resolve();cs.slice(0,4).forEach(function(c){seq=seq.then(function(){return verify(c.address).then(function(v){var i=cs.findIndex(function(x){return x.address===c.address});cs[i]=evaluate(c.pair,v)})})});return seq.then(function(){var m={};S.candidates.concat(cs).forEach(function(c){m[c.address]=c});S.candidates=Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return b.opp-a.opp});update();save();render();toast(cs.length+' Solana market(s) added.')})}).catch(function(){toast('Search failed.')})}
+function toast(t){var e=$('#toast');e.textContent=t;e.classList.remove('hidden');clearTimeout(e._t);e._t=setTimeout(function(){e.classList.add('hidden')},2700)}
+function go(id){$$('.view').forEach(function(v){v.classList.toggle('on',v.id===id)});$$('[data-nav]').forEach(function(b){b.classList.toggle('on',b.dataset.nav===id)});scrollTo(0,0)}
+$('#refresh').onclick=function(){refresh(true)};$('#close').onclick=function(){$('#backdrop').classList.add('hidden')};$('#backdrop').onclick=function(e){if(e.target===$('#backdrop'))$('#backdrop').classList.add('hidden')};$$('[data-nav]').forEach(function(b){b.onclick=function(){go(b.dataset.nav)}});$$('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});$$('.chip').forEach(function(b){b.onclick=function(){S.filter=b.dataset.filter;$$('.chip').forEach(function(x){x.classList.toggle('on',x===b)});renderCandidates();bindReviews()}});$('#searchForm').onsubmit=function(e){e.preventDefault();search($('#searchInput').value)};$('#export').onclick=function(){var blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),positions:S.positions,history:S.history,evaluations:S.evaluations},null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='nightshift-'+day()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(u)},500)};
+resetDay();render();refresh(true);setInterval(function(){if(!document.hidden)refresh(true)},45000);document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-S.last>45000)refresh(true)});
+})();
+</script></body></html>

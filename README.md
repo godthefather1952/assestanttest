@@ -83,7 +83,12 @@ Third-party libraries and model weights retain their own licenses. The SDXS mode
 - Fcouprie / SDXS-512 ONNX INT8 export
 - IDKiro / SDXS-512-0.9
 - ONNX Runtime Web
-- Transformers.js
+- Hugging Face Tokenizers.js
 - TAESD
 
 SunCanvas is not affiliated with or endorsed by OpenAI.
+
+
+## Tokenizer implementation
+
+SunCanvas loads `tokenizer/tokenizer.json` and `tokenizer/tokenizer_config.json` directly from the same SDXS ONNX bundle and constructs the tokenizer with the lightweight `@huggingface/tokenizers` browser package. It does not use `AutoTokenizer` or model-class inference.

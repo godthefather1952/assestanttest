@@ -1,4 +1,4 @@
-name: Validate static image app
+name: Validate private local image app
 
 on:
   push:
@@ -16,9 +16,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Check JavaScript syntax
-        run: node --check app.js
-      - name: Verify required static files
+
+      - name: Check JavaScript module syntax
+        run: node --input-type=module --check < app.js
+
+      - name: Verify privacy-first static files
         run: |
           test -s index.html
           test -s styles.css
@@ -26,4 +28,8 @@ jobs:
           test -s README.md
           test -s LICENSE
           grep -q "SunCanvas" index.html
-          grep -q "Pollinations" README.md
+          grep -q "SD‑Turbo" index.html
+          grep -q "No API key" README.md
+          ! grep -Rni "pollinations" index.html app.js styles.css README.md
+          ! grep -Rni "localStorage" app.js
+          ! grep -Rni "api key" app.js

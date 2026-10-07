@@ -1,16 +1,7 @@
 import {
-  detectCapabilities,
-  loadModel,
-  generateImage,
-  unloadModel,
-  purgeModelCache
-} from "https://esm.sh/web-txt2img@0.3.1?bundle&deps=onnxruntime-web@1.18.0,@xenova/transformers@2.17.2";
-
-import * as ort from "https://esm.sh/onnxruntime-web@1.18.0/webgpu?bundle";
-import {
   AutoTokenizer,
   env as transformersEnv
-} from "https://esm.sh/@xenova/transformers@2.17.2?bundle";
+} from "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -41,8 +32,21 @@ const els = {
   resultMeta: $("resultMeta"),
   resultSubmeta: $("resultSubmeta"),
   downloadBtn: $("downloadBtn"),
-  toast: $("toast")
+  toast: $("toast"),
+  loadDetails: $("loadDetails"),
+  loadError: $("loadError")
 };
+
+const MODEL_BASE = "https://huggingface.co/schmuell/sd-turbo-ort-web/resolve/main";
+const ORT_WEBGPU = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.webgpu.min.js";
+const ORT_WASM = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js";
+const ORT_ASSET_BASE = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/";
+
+const MODEL_FILES = [
+  { key: "text_encoder", path: "text_encoder/model.onnx", label: "text encoder" },
+  { key: "unet", path: "unet/model.onnx", label: "image model" },
+  { key: "vae_decoder", path: "vae_decoder/model.onnx", label: "image decoder" }
+];
 
 const STYLE_SUFFIX = {
   auto: "",
@@ -63,10 +67,8 @@ const SURPRISES = [
   "A vintage 1970s sports car parked outside a modern desert motel at blue hour, understated editorial campaign photography"
 ];
 
-const MODEL_ID = "sd-turbo";
-const ORT_WASM_PATH = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/";
-
 let activeStyle = "auto";
+let backend = "webgpu";
 let modelLoaded = false;
 let modelLoading = false;
 let generating = false;
@@ -74,7 +76,9 @@ let currentAbortController = null;
 let currentImageUrl = "";
 let currentImageBlob = null;
 let toastTimer = 0;
-let tokenizerPromise = null;
+let tokenizer = null;
+let ort = null;
+let sessions = {};
 
 transformersEnv.allowLocalModels = false;
 transformersEnv.allowRemoteModels = true;
@@ -86,7 +90,21 @@ function showToast(message) {
   clearTimeout(toastTimer);
   els.toast.textContent = message;
   els.toast.classList.add("show");
-  toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2000);
+  toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2300);
+}
+
+function setTechnicalError(error) {
+  const message = error instanceof Error
+    ? `${error.name}: ${error.message}\n\n${error.stack || ""}`
+    : String(error);
+
+  els.loadError.textContent = message;
+  els.loadDetails.hidden = false;
+}
+
+function clearTechnicalError() {
+  els.loadError.textContent = "";
+  els.loadDetails.hidden = true;
 }
 
 function randomSeed() {
@@ -109,146 +127,241 @@ function setReadyState(ready, message = "") {
   els.generateBtn.disabled = !ready || generating;
   els.statusDot.classList.toggle("ready", ready);
   els.statusText.textContent = message || (ready ? "Local model ready" : "Local model not loaded");
-  els.privacyState.textContent = ready ? "Local inference ready" : "No prompt leaves this page";
+  els.privacyState.textContent = ready
+    ? `Local ${backend === "webgpu" ? "GPU" : "CPU"} inference ready`
+    : "No prompt leaves this page";
   els.loadModelBtn.textContent = ready ? "Model loaded" : "Download local model";
   els.loadModelBtn.disabled = ready || modelLoading;
 }
 
-function setLoadProgress(progress = {}) {
+function setLoadProgress({ message = "Preparing…", pct = null, detail = "" } = {}) {
   els.modelProgress.hidden = false;
 
-  const pct = typeof progress.pct === "number"
-    ? Math.max(0, Math.min(100, Math.round(progress.pct)))
-    : null;
-
-  if (pct === null) {
-    els.progressFill.classList.add("indeterminate");
-  } else {
+  if (typeof pct === "number") {
+    const clamped = Math.max(0, Math.min(100, Math.round(pct)));
     els.progressFill.classList.remove("indeterminate");
-    els.progressFill.style.width = pct + "%";
-  }
-
-  els.progressLabel.textContent = progress.message || "Preparing local model…";
-
-  if (
-    typeof progress.bytesDownloaded === "number" &&
-    typeof progress.totalBytesExpected === "number" &&
-    progress.totalBytesExpected > 0
-  ) {
-    const loadedGB = progress.bytesDownloaded / 1024 / 1024 / 1024;
-    const totalGB = progress.totalBytesExpected / 1024 / 1024 / 1024;
-    els.progressValue.textContent = `${loadedGB.toFixed(2)} / ${totalGB.toFixed(2)} GB`;
+    els.progressFill.style.width = clamped + "%";
+    els.progressValue.textContent = detail || clamped + "%";
   } else {
-    els.progressValue.textContent = pct === null ? "" : pct + "%";
+    els.progressFill.style.width = "35%";
+    els.progressFill.classList.add("indeterminate");
+    els.progressValue.textContent = detail;
   }
+
+  els.progressLabel.textContent = message;
 }
 
-function setGenerationProgress(event = {}) {
+function setGenerationProgress(phase, pct) {
   els.generationProgress.hidden = false;
-  const pct = typeof event.pct === "number"
-    ? Math.max(0, Math.min(100, Math.round(event.pct)))
-    : 0;
-
-  els.generationFill.style.width = pct + "%";
+  els.generationFill.style.width = Math.max(0, Math.min(100, pct)) + "%";
 
   const labels = {
     tokenizing: "Reading your prompt locally…",
     encoding: "Encoding prompt locally…",
-    denoising: "Generating pixels on your GPU…",
+    denoising: "Generating pixels locally…",
     decoding: "Finishing image locally…",
-    complete: "Complete"
+    complete: "Complete · image stayed on this device"
   };
 
-  els.generationLabel.textContent = labels[event.phase] || "Generating locally…";
+  els.generationLabel.textContent = labels[phase] || "Generating locally…";
 }
 
-async function tokenizerProvider() {
-  if (!tokenizerPromise) {
-    tokenizerPromise = AutoTokenizer.from_pretrained(
-      "Xenova/clip-vit-base-patch16",
-      {
-        local_files_only: false,
-        revision: "main"
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-runtime="${src}"]`);
+    if (existing) {
+      if (window.ort) resolve();
+      else existing.addEventListener("load", resolve, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.runtime = src;
+    script.referrerPolicy = "no-referrer";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Could not download ONNX Runtime."));
+    document.head.appendChild(script);
+  });
+}
+
+async function chooseBackend() {
+  if (navigator.gpu) {
+    try {
+      const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+      if (adapter) {
+        backend = "webgpu";
+        els.privacyState.textContent = "WebGPU available · prompts stay local";
+        els.statusText.textContent = "Ready to download the local GPU model";
+        return;
       }
-    );
+    } catch {}
   }
 
-  const tokenizer = await tokenizerPromise;
-  tokenizer.pad_token_id = 0;
-
-  return async (text, options = {}) => tokenizer(text, options);
+  backend = "wasm";
+  els.privacyState.textContent = "Private CPU compatibility mode";
+  els.statusText.textContent = "WebGPU unavailable · CPU mode is available but much slower";
+  showToast("Using private CPU compatibility mode");
 }
 
-async function checkDevice() {
-  try {
-    const caps = await detectCapabilities();
+async function loadOrtRuntime() {
+  const src = backend === "webgpu" ? ORT_WEBGPU : ORT_WASM;
+  await loadScript(src);
 
-    if (!caps.webgpu || !navigator.gpu) {
-      els.privacyState.textContent = "WebGPU unavailable";
-      els.statusText.textContent = "This browser/device does not expose WebGPU";
-      els.loadModelBtn.disabled = true;
-      els.generateBtn.disabled = true;
-      showToast("WebGPU is required for local generation");
-      return;
-    }
-
-    const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
-    if (!adapter) {
-      els.privacyState.textContent = "Compatible GPU not found";
-      els.loadModelBtn.disabled = true;
-      return;
-    }
-
-    els.privacyState.textContent = "WebGPU available · prompts stay local";
-    els.statusText.textContent = "Ready to download the local model";
-    els.loadModelBtn.disabled = false;
-  } catch (error) {
-    console.error(error);
-    els.privacyState.textContent = "Device check failed";
-    els.loadModelBtn.disabled = true;
+  if (!window.ort) {
+    throw new Error("ONNX Runtime loaded but did not initialize.");
   }
+
+  ort = window.ort;
+
+  if (ort.env?.wasm) {
+    ort.env.wasm.wasmPaths = ORT_ASSET_BASE;
+    ort.env.wasm.numThreads = 1;
+  }
+}
+
+async function fetchModelFile(path, index) {
+  const url = `${MODEL_BASE}/${path}`;
+  const cache = await caches.open("suncanvas-model-v2");
+  const cached = await cache.match(url);
+
+  if (cached) {
+    setLoadProgress({
+      message: `Loading cached ${MODEL_FILES[index].label}…`,
+      pct: Math.round((index / MODEL_FILES.length) * 100),
+      detail: "cached"
+    });
+    return await cached.arrayBuffer();
+  }
+
+  setLoadProgress({
+    message: `Downloading ${MODEL_FILES[index].label}…`,
+    pct: Math.round((index / MODEL_FILES.length) * 100)
+  });
+
+  const response = await fetch(url, {
+    cache: "no-store",
+    credentials: "omit",
+    referrerPolicy: "no-referrer"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Model download failed (${response.status}) for ${MODEL_FILES[index].label}.`);
+  }
+
+  const cloned = response.clone();
+
+  try {
+    await cache.put(url, cloned);
+  } catch (error) {
+    console.warn("Model cache write skipped:", error);
+  }
+
+  return await response.arrayBuffer();
+}
+
+async function ensureTokenizer() {
+  if (tokenizer) return tokenizer;
+
+  setLoadProgress({ message: "Loading private prompt tokenizer…", pct: 4 });
+
+  tokenizer = await AutoTokenizer.from_pretrained(
+    "Xenova/clip-vit-base-patch16",
+    { local_files_only: false, revision: "main" }
+  );
+
+  tokenizer.pad_token_id = 0;
+  return tokenizer;
+}
+
+function sessionOptions(key) {
+  const options = {
+    executionProviders: [backend],
+    enableMemPattern: false,
+    enableCpuMemArena: false,
+    extra: {
+      session: {
+        disable_prepacking: "1",
+        use_device_allocator_for_initializers: "1",
+        use_ort_model_bytes_directly: "1",
+        use_ort_model_bytes_for_initializers: "1"
+      }
+    }
+  };
+
+  if (key === "unet") {
+    options.freeDimensionOverrides = {
+      batch_size: 1,
+      num_channels: 4,
+      height: 64,
+      width: 64,
+      sequence_length: 77
+    };
+  } else if (key === "text_encoder") {
+    options.freeDimensionOverrides = { batch_size: 1 };
+  } else if (key === "vae_decoder") {
+    options.freeDimensionOverrides = {
+      batch_size: 1,
+      num_channels_latent: 4,
+      height_latent: 64,
+      width_latent: 64
+    };
+  }
+
+  return options;
 }
 
 async function loadLocalModel() {
   if (modelLoaded || modelLoading) return;
 
+  clearTechnicalError();
   modelLoading = true;
   els.loadModelBtn.disabled = true;
   els.loadModelBtn.textContent = "Loading…";
-  els.statusText.textContent = "Downloading / loading model locally";
+  els.statusText.textContent = `Preparing private ${backend === "webgpu" ? "GPU" : "CPU"} inference…`;
   els.modelProgress.hidden = false;
-  setLoadProgress({ message: "Starting private local model…" });
 
   try {
-    const result = await loadModel(MODEL_ID, {
-      backendPreference: ["webgpu"],
-      ort,
-      wasmPaths: ORT_WASM_PATH,
-      wasmNumThreads: Math.min(4, Math.max(1, navigator.hardwareConcurrency || 2)),
-      wasmSimd: true,
-      tokenizerProvider,
-      onProgress: setLoadProgress
-    });
+    await loadOrtRuntime();
+    await ensureTokenizer();
 
-    if (!result?.ok) {
-      throw new Error(result?.message || "Could not load the local model.");
+    sessions = {};
+
+    for (let index = 0; index < MODEL_FILES.length; index++) {
+      const file = MODEL_FILES[index];
+      const buffer = await fetchModelFile(file.path, index);
+
+      setLoadProgress({
+        message: `Compiling ${file.label} locally…`,
+        pct: Math.round(((index + 0.6) / MODEL_FILES.length) * 100)
+      });
+
+      sessions[file.key] = await ort.InferenceSession.create(buffer, sessionOptions(file.key));
+
+      setLoadProgress({
+        message: `${file.label} ready`,
+        pct: Math.round(((index + 1) / MODEL_FILES.length) * 100)
+      });
     }
 
     setLoadProgress({
       message: "Local model ready",
       pct: 100,
-      bytesDownloaded: result.bytesDownloaded
+      detail: backend === "webgpu" ? "GPU" : "CPU"
     });
 
-    setReadyState(true, "Local model ready · generation stays on device");
+    setReadyState(true, `Local model ready · ${backend === "webgpu" ? "GPU" : "CPU"} mode`);
     showToast("Local model ready");
   } catch (error) {
     console.error(error);
-    setReadyState(false, "Model load failed");
-    els.progressLabel.textContent = error?.message || "Model load failed";
+    setTechnicalError(error);
+    setReadyState(false, "Model load failed · open Technical details");
     els.progressFill.classList.remove("indeterminate");
     els.progressFill.style.width = "0%";
-    showToast("Could not load local model");
+    els.progressLabel.textContent = "Model load failed";
+    els.progressValue.textContent = backend === "wasm" ? "CPU compatibility limit" : "See details";
+    showToast("Model load failed — details are now shown");
   } finally {
     modelLoading = false;
     if (!modelLoaded) {
@@ -258,11 +371,154 @@ async function loadLocalModel() {
   }
 }
 
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function randnLatents(shape, sigma, seed) {
+  const rand = mulberry32(seed);
+  let size = 1;
+  for (const dimension of shape) size *= dimension;
+
+  const data = new Float32Array(size);
+
+  for (let i = 0; i < size; i++) {
+    const u = Math.max(rand(), 1e-7);
+    const v = Math.max(rand(), 1e-7);
+    data[i] = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) * sigma;
+  }
+
+  return data;
+}
+
+function scaleModelInputs(tensor, sigma) {
+  const input = tensor.data;
+  const output = new Float32Array(input.length);
+  const divisor = Math.sqrt(sigma * sigma + 1);
+
+  for (let i = 0; i < input.length; i++) {
+    output[i] = input[i] / divisor;
+  }
+
+  return new ort.Tensor("float32", output, tensor.dims);
+}
+
+function schedulerStep(modelOutput, sample, sigma, vaeScalingFactor) {
+  const output = new Float32Array(modelOutput.data.length);
+
+  for (let i = 0; i < output.length; i++) {
+    const predOriginal = sample.data[i] - sigma * modelOutput.data[i];
+    const derivative = (sample.data[i] - predOriginal) / sigma;
+    output[i] = (sample.data[i] + derivative * -sigma) / vaeScalingFactor;
+  }
+
+  return new ort.Tensor("float32", output, modelOutput.dims);
+}
+
+async function tensorToBlob(tensor) {
+  const [, , h, w] = tensor.dims;
+  const data = tensor.data;
+  const rgba = new Uint8ClampedArray(w * h * 4);
+  let out = 0;
+
+  const clamp = (value) => {
+    const normalized = Math.min(1, Math.max(0, value / 2 + 0.5));
+    return Math.round(normalized * 255);
+  };
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      rgba[out++] = clamp(data[y * w + x]);
+      rgba[out++] = clamp(data[h * w + y * w + x]);
+      rgba[out++] = clamp(data[2 * h * w + y * w + x]);
+      rgba[out++] = 255;
+    }
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const context = canvas.getContext("2d");
+  context.putImageData(new ImageData(rgba, w, h), 0, 0);
+
+  return await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => blob ? resolve(blob) : reject(new Error("Could not encode image.")),
+      "image/png"
+    );
+  });
+}
+
+async function runModel(prompt, seed, signal) {
+  const tok = await ensureTokenizer();
+  if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+
+  setGenerationProgress("tokenizing", 10);
+
+  const tokenized = await tok(prompt, {
+    padding: true,
+    max_length: 77,
+    truncation: true,
+    return_tensor: false
+  });
+
+  const idsRaw = tokenized.input_ids;
+  const ids = Int32Array.from(Array.isArray(idsRaw[0]) ? idsRaw[0] : idsRaw);
+
+  setGenerationProgress("encoding", 25);
+
+  const textOutput = await sessions.text_encoder.run({
+    input_ids: new ort.Tensor("int32", ids, [1, ids.length])
+  });
+
+  const hidden = textOutput.last_hidden_state || Object.values(textOutput)[0];
+
+  if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+
+  const sigma = 14.6146;
+  const vaeScalingFactor = 0.18215;
+  const latentShape = [1, 4, 64, 64];
+  const latent = new ort.Tensor("float32", randnLatents(latentShape, sigma, seed), latentShape);
+  const latentInput = scaleModelInputs(latent, sigma);
+
+  setGenerationProgress("denoising", 65);
+
+  const unetOutput = await sessions.unet.run({
+    sample: latentInput,
+    timestep: new ort.Tensor("int64", BigInt64Array.from([999n]), [1]),
+    encoder_hidden_states: hidden
+  });
+
+  const predictedNoise = unetOutput.out_sample || Object.values(unetOutput)[0];
+
+  if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+
+  const newLatents = schedulerStep(predictedNoise, latent, sigma, vaeScalingFactor);
+
+  setGenerationProgress("decoding", 90);
+
+  const vaeOutput = await sessions.vae_decoder.run({ latent_sample: newLatents });
+  const imageTensor = vaeOutput.sample || Object.values(vaeOutput)[0];
+
+  if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
+
+  const blob = await tensorToBlob(imageTensor);
+  setGenerationProgress("complete", 100);
+  return blob;
+}
+
 function clearCurrentImage() {
   if (currentImageUrl) {
     URL.revokeObjectURL(currentImageUrl);
     currentImageUrl = "";
   }
+
   currentImageBlob = null;
   els.resultImage.removeAttribute("src");
   els.resultImage.classList.remove("loaded");
@@ -296,50 +552,32 @@ async function generateLocalImage() {
 
   currentAbortController = new AbortController();
   const seed = resolvedSeed();
-  const startedAt = performance.now();
+  const started = performance.now();
 
   try {
-    const result = await generateImage({
-      model: MODEL_ID,
-      prompt: fullPrompt(),
-      seed,
-      width: 512,
-      height: 512,
-      signal: currentAbortController.signal,
-      onProgress: setGenerationProgress
-    });
-
-    if (!result?.ok) {
-      if (result?.reason === "cancelled") {
-        showToast("Generation cancelled");
-        return;
-      }
-      throw new Error(result?.message || "Local generation failed.");
-    }
-
+    const blob = await runModel(fullPrompt(), seed, currentAbortController.signal);
     clearCurrentImage();
 
-    currentImageBlob = result.blob;
-    currentImageUrl = URL.createObjectURL(result.blob);
+    currentImageBlob = blob;
+    currentImageUrl = URL.createObjectURL(blob);
     els.resultImage.src = currentImageUrl;
     els.resultImage.classList.add("loaded");
     els.imagePlaceholder.hidden = true;
 
-    const elapsedMs = result.timeMs || (performance.now() - startedAt);
+    const elapsed = (performance.now() - started) / 1000;
     els.resultMeta.textContent = `SD‑Turbo · seed ${seed}`;
-    els.resultSubmeta.textContent = `Generated locally in ${(elapsedMs / 1000).toFixed(1)}s · not uploaded`;
+    els.resultSubmeta.textContent =
+      `Generated locally in ${elapsed.toFixed(1)}s · ${backend === "webgpu" ? "GPU" : "CPU"} mode · not uploaded`;
+
     els.resultsSection.hidden = false;
     els.resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
-
-    els.generationFill.style.width = "100%";
-    els.generationLabel.textContent = "Complete · image stayed on this device";
   } catch (error) {
-    if (currentAbortController?.signal.aborted) {
+    if (error?.name === "AbortError") {
       showToast("Generation cancelled");
     } else {
       console.error(error);
-      showToast(error?.message || "Local generation failed");
-      els.generationLabel.textContent = error?.message || "Generation failed";
+      setTechnicalError(error);
+      showToast("Local generation failed — see Technical details");
     }
   } finally {
     generating = false;
@@ -357,18 +595,23 @@ async function removeCachedModel() {
   }
 
   try {
-    if (modelLoaded) {
-      await unloadModel(MODEL_ID);
+    for (const session of Object.values(sessions)) {
+      try { session?.release?.(); } catch {}
     }
 
-    await purgeModelCache(MODEL_ID);
-    tokenizerPromise = null;
-    setReadyState(false, "Cached model removed");
+    sessions = {};
+    modelLoaded = false;
+    tokenizer = null;
+
+    await caches.delete("suncanvas-model-v2");
+
+    setReadyState(false, "Cached image model removed");
     els.modelProgress.hidden = true;
     els.progressFill.style.width = "0%";
-    showToast("Local model cache removed");
+    showToast("Local image model cache removed");
   } catch (error) {
     console.error(error);
+    setTechnicalError(error);
     showToast("Could not remove model cache");
   }
 }
@@ -380,27 +623,28 @@ function clearSession() {
   els.seed.value = "";
   clearCurrentImage();
   els.generationProgress.hidden = true;
+  clearTechnicalError();
 
   document.querySelectorAll("[data-style]").forEach((chip) => {
     chip.classList.toggle("active", chip.dataset.style === "auto");
   });
-  activeStyle = "auto";
 
+  activeStyle = "auto";
   showToast("Prompt and image cleared from this tab");
 }
 
-async function downloadCurrentImage() {
+function downloadCurrentImage() {
   if (!currentImageBlob || !currentImageUrl) {
     showToast("Generate an image first");
     return;
   }
 
-  const a = document.createElement("a");
-  a.href = currentImageUrl;
-  a.download = `suncanvas-${Date.now()}.png`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  const link = document.createElement("a");
+  link.href = currentImageUrl;
+  link.download = `suncanvas-${Date.now()}.png`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 document.querySelectorAll("[data-style]").forEach((button) => {
@@ -444,4 +688,4 @@ window.addEventListener("pagehide", () => {
 });
 
 setReadyState(false);
-checkDevice();
+chooseBackend();

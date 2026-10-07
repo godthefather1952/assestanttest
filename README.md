@@ -1,54 +1,67 @@
-# Sandbox Browser
+# SunCanvas
 
-A remote, disposable Chromium browser designed to keep visited websites separated from the user's normal browser.
+SunCanvas is a free, open-source, mobile-friendly AI image generator that runs as a static website.
 
-## Security controls
+It was built as an independent alternative to proprietary image-generation interfaces. It **does not contain, copy, or reproduce OpenAI model weights, training data, source code, or the GPT Image model itself**.
 
-- Private access key required before the browser UI can be used.
-- Authentication and browser-session identifiers are stored in `HttpOnly`, `Secure`, `SameSite=Strict` cookies.
-- Browser sessions expire after 5 minutes of inactivity and have a 30 minute absolute maximum lifetime.
-- Each session uses a separate Playwright BrowserContext and is destroyed when the session ends.
-- Chromium runs as a non-root `pwuser`.
-- Chromium sandboxing is enabled when the host permits it.
-- Downloads are denied by the browser context, CDP download policy, and download-event cancellation.
-- File upload pickers are cleared.
-- Private, local, self-referential, link-local, reserved, and other non-public destinations are blocked.
-- HTTP/HTTPS and WS/WSS are restricted to ports 80 and 443.
-- WebSocket destinations are validated before the remote connection is made.
-- Service workers are disabled.
-- Popups are collapsed back into the main remote tab.
-- Strict CSP, HSTS, clickjacking protection, restrictive Permissions Policy, and no-referrer policy are applied to the controller UI.
-- API and login rate limits reduce abuse.
-- An **End session** button destroys the remote browser context immediately.
-- An explicit **Sign out** control clears controller authentication.
+## What it does
 
-## Important boundary
+- Text-to-image generation
+- Flux, Z-Image, and Klein model choices through Pollinations
+- 1:1, 4:3, 3:4, 16:9, and 9:16 aspect ratios
+- Standard and high-detail output sizes
+- 1–4 images per prompt
+- Style presets
+- Prompt enhancement toggle
+- Negative-prompt field
+- Reproducible seed control
+- Safe-mode toggle
+- Local generation history
+- Mobile-first interface
+- No app account or app-side API key
 
-This is stronger isolation than an iframe browser, but it is not equivalent to a disposable virtual machine per website. The remote Chromium process still runs on the same service instance as the controller server.
+## How generation works
 
-The app also performs DNS/IP filtering before remote requests, but application-layer hostname checks are not a substitute for an infrastructure-level outbound firewall. For higher-assurance deployments, put Chromium workers in separate disposable containers or VMs with enforced egress rules.
+The site is completely static. Your browser sends image requests directly to Pollinations.
 
-## Deployment
+Primary endpoint:
 
-The live Render deployment uses Docker and the pinned Playwright image matching the package version.
+`https://gen.pollinations.ai/image/{prompt}`
 
-Required environment variables:
+Legacy fallback:
 
-- `BROWSER_ACCESS_KEY` — private key required to enter the browser
-- `MAX_SESSIONS` — maximum concurrent browser contexts
-- `SESSION_IDLE_MS` — inactivity timeout
-- `SESSION_MAX_MS` — absolute browser-session lifetime
-- `APP_PUBLIC_HOST` — deployment hostname blocked from being browsed recursively
-- `CHROMIUM_SANDBOX` — `true` when the host supports Chromium's sandbox
+`https://image.pollinations.ai/prompt/{prompt}`
 
-## Local run
+This keeps the GitHub project lightweight and avoids requiring a paid GPU server. The availability, quotas, model lineup, and terms of the generation provider can change independently of this repository.
+
+## Privacy
+
+This repository has no database and no application server. Recent-generation history is stored in your browser with `localStorage`.
+
+Prompts and generation parameters are sent to Pollinations in order to create images. Review Pollinations' current privacy and usage terms before entering sensitive information.
+
+## Run locally
+
+No build step is required.
 
 ```bash
-docker build -t sandbox-browser .
-docker run --rm -p 10000:10000 \
-  -e BROWSER_ACCESS_KEY='replace-this-with-a-long-random-key' \
-  -e CHROMIUM_SANDBOX=true \
-  sandbox-browser
+python3 -m http.server 8000
 ```
 
-Open `http://localhost:10000`.
+Then open:
+
+`http://localhost:8000`
+
+## Deploy
+
+The project is designed for GitHub Pages. Serve the repository root from the `main` branch.
+
+## License
+
+MIT. See [LICENSE](./LICENSE).
+
+## Attribution
+
+Image generation is powered by [Pollinations](https://pollinations.ai/).
+
+SunCanvas is not affiliated with or endorsed by OpenAI.

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0c">
+  <meta name="description" content="SunCanvas is a free, open-source AI image generator.">
+  <title>SunCanvas — Free AI Image Generator</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="SunCanvas home">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span>SunCanvas</span>
+      </a>
+      <div class="top-actions">
+        <button class="ghost-btn" id="clearHistoryBtn" type="button">Clear recent</button>
+        <a class="ghost-btn" href="https://github.com/godthefather1952/assestanttest" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">FREE · OPEN SOURCE · NO ACCOUNT</p>
+        <h1>Turn an idea into an image.</h1>
+        <p class="hero-copy">Describe what you want. SunCanvas sends the prompt directly from your browser to a free image-generation endpoint and shows the result here.</p>
+      </section>
+
+      <section class="studio" aria-label="Image generator">
+        <div class="composer">
+          <label class="sr-only" for="prompt">Image prompt</label>
+          <textarea id="prompt" rows="5" maxlength="3000" placeholder="Describe the image you want to create…"></textarea>
+
+          <div class="prompt-tools">
+            <div class="preset-row" aria-label="Style presets">
+              <button class="chip active" type="button" data-style="auto">Auto</button>
+              <button class="chip" type="button" data-style="photo">Photo</button>
+              <button class="chip" type="button" data-style="cinematic">Cinematic</button>
+              <button class="chip" type="button" data-style="editorial">Editorial</button>
+              <button class="chip" type="button" data-style="illustration">Illustration</button>
+              <button class="chip" type="button" data-style="anime">Anime</button>
+              <button class="chip" type="button" data-style="3d">3D</button>
+            </div>
+
+            <button id="surpriseBtn" class="text-btn" type="button">Surprise me</button>
+          </div>
+
+          <div class="controls-grid">
+            <label class="control">
+              <span>Model</span>
+              <select id="model">
+                <option value="flux">Flux · versatile</option>
+                <option value="zimage">Z-Image · artistic</option>
+                <option value="klein">Klein · fast</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Aspect ratio</span>
+              <select id="ratio">
+                <option value="1:1">Square · 1:1</option>
+                <option value="4:3">Landscape · 4:3</option>
+                <option value="3:4">Portrait · 3:4</option>
+                <option value="16:9">Wide · 16:9</option>
+                <option value="9:16">Story · 9:16</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Quality</span>
+              <select id="quality">
+                <option value="standard">Standard</option>
+                <option value="high">High detail</option>
+              </select>
+            </label>
+
+            <label class="control">
+              <span>Images</span>
+              <select id="count">
+                <option value="1">1 image</option>
+                <option value="2">2 images</option>
+                <option value="3">3 images</option>
+                <option value="4">4 images</option>
+              </select>
+            </label>
+          </div>
+
+          <details class="advanced">
+            <summary>Advanced controls</summary>
+            <div class="advanced-grid">
+              <label class="control">
+                <span>Seed</span>
+                <div class="seed-row">
+                  <input id="seed" inputmode="numeric" pattern="[0-9]*" placeholder="Random">
+                  <button id="randomSeedBtn" class="mini-btn" type="button">Randomize</button>
+                </div>
+              </label>
+
+              <label class="control">
+                <span>Avoid</span>
+                <input id="negativePrompt" maxlength="500" placeholder="Things you don't want in the image">
+              </label>
+
+              <label class="toggle">
+                <input id="enhance" type="checkbox" checked>
+                <span class="toggle-ui" aria-hidden="true"></span>
+                <span><strong>Prompt enhancement</strong><small>Add detail automatically when supported.</small></span>
+              </label>
+
+              <label class="toggle">
+                <input id="safeMode" type="checkbox" checked>
+                <span class="toggle-ui" aria-hidden="true"></span>
+                <span><strong>Safe mode</strong><small>Ask the provider to use stricter content filtering.</small></span>
+              </label>
+            </div>
+          </details>
+
+          <div class="composer-footer">
+            <span class="privacy-note">Prompts are sent to Pollinations for generation.</span>
+            <button id="generateBtn" class="generate-btn" type="button">
+              <span class="generate-icon" aria-hidden="true">✦</span>
+              Generate
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="results-section" id="resultsSection" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR CREATIONS</p>
+            <h2>Generated images</h2>
+          </div>
+          <button id="generateAgainBtn" class="ghost-btn" type="button">Generate again</button>
+        </div>
+        <div class="results-grid" id="resultsGrid" aria-live="polite"></div>
+      </section>
+
+      <section class="recent-section" id="recentSection" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">LOCAL HISTORY</p>
+            <h2>Recent generations</h2>
+          </div>
+        </div>
+        <div class="recent-grid" id="recentGrid"></div>
+      </section>
+
+      <section class="about-strip">
+        <div>
+          <strong>Open source by design.</strong>
+          <span>The interface is MIT-licensed and runs as a static GitHub Pages site.</span>
+        </div>
+        <div>
+          <strong>No OpenAI model weights.</strong>
+          <span>SunCanvas is an independent app using free/open image-generation services.</span>
+        </div>
+        <div>
+          <strong>No app server.</strong>
+          <span>No passwords, database, or private API key are stored by this project.</span>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>SunCanvas</span>
+      <span>Image generation powered by Pollinations.ai.</span>
+      <span>Not affiliated with OpenAI.</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

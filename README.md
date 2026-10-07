@@ -1,63 +1,54 @@
 # Sandbox Browser
 
-This repository is now a dedicated **remote sandboxed web browser**.
+A remote, disposable Chromium browser designed to keep visited websites separated from the user's normal browser.
 
-When the deployed site opens, the page itself is the browser UI. Websites run inside an isolated headless Chromium context on the server and are rendered back to the visitor as screenshots. Clicks, scrolling, navigation, and typing are relayed to that remote browser.
+## Security controls
 
-## Security model
-
-- Each visitor session gets its own Chromium browser context.
-- Remote website code does **not** run directly in the visitor's browser.
-- File downloads are disabled with Playwright's `acceptDownloads: false` and download events are cancelled.
-- Private, local, link-local, reserved, and other non-public network destinations are blocked to reduce SSRF/internal-network access.
-- Only HTTP/HTTPS on ports 80 and 443 are allowed.
-- Service workers are blocked.
-- Browser sessions expire after inactivity.
-- Popups are folded back into the current remote tab instead of opening uncontrolled local windows.
-- Camera, microphone, geolocation, USB, and payment permissions are disabled for the app UI.
+- Private access key required before the browser UI can be used.
+- Authentication and browser-session identifiers are stored in `HttpOnly`, `Secure`, `SameSite=Strict` cookies.
+- Browser sessions expire after 5 minutes of inactivity and have a 30 minute absolute maximum lifetime.
+- Each session uses a separate Playwright BrowserContext and is destroyed when the session ends.
+- Chromium runs as a non-root `pwuser`.
+- Chromium sandboxing is enabled when the host permits it.
+- Downloads are denied by the browser context, CDP download policy, and download-event cancellation.
+- File upload pickers are cleared.
+- Private, local, self-referential, link-local, reserved, and other non-public destinations are blocked.
+- HTTP/HTTPS and WS/WSS are restricted to ports 80 and 443.
+- WebSocket destinations are validated before the remote connection is made.
+- Service workers are disabled.
+- Popups are collapsed back into the main remote tab.
+- Strict CSP, HSTS, clickjacking protection, restrictive Permissions Policy, and no-referrer policy are applied to the controller UI.
+- API and login rate limits reduce abuse.
+- An **End session** button destroys the remote browser context immediately.
+- An explicit **Sign out** control clears controller authentication.
 
 ## Important boundary
 
-This is a **remote browser**, not an anonymity service. Remote websites see the deployment server's network identity. The server receives the navigation and input commands needed to operate the remote page, so do not use a deployment you do not trust for sensitive credentials.
+This is stronger isolation than an iframe browser, but it is not equivalent to a disposable virtual machine per website. The remote Chromium process still runs on the same service instance as the controller server.
 
-The user receives page images, not remote response bodies or downloaded files.
+The app also performs DNS/IP filtering before remote requests, but application-layer hostname checks are not a substitute for an infrastructure-level outbound firewall. For higher-assurance deployments, put Chromium workers in separate disposable containers or VMs with enforced egress rules.
 
-## Run locally
+## Deployment
 
-You need Docker because the app requires Chromium.
+The live Render deployment uses Docker and the pinned Playwright image matching the package version.
+
+Required environment variables:
+
+- `BROWSER_ACCESS_KEY` — private key required to enter the browser
+- `MAX_SESSIONS` — maximum concurrent browser contexts
+- `SESSION_IDLE_MS` — inactivity timeout
+- `SESSION_MAX_MS` — absolute browser-session lifetime
+- `APP_PUBLIC_HOST` — deployment hostname blocked from being browsed recursively
+- `CHROMIUM_SANDBOX` — `true` when the host supports Chromium's sandbox
+
+## Local run
 
 ```bash
 docker build -t sandbox-browser .
-docker run --rm -p 10000:10000 sandbox-browser
+docker run --rm -p 10000:10000 \
+  -e BROWSER_ACCESS_KEY='replace-this-with-a-long-random-key' \
+  -e CHROMIUM_SANDBOX=true \
+  sandbox-browser
 ```
 
-Then open:
-
-```
-http://localhost:10000
-```
-
-## Deploy
-
-This is **not a GitHub Pages app**. GitHub Pages cannot run the Chromium backend.
-
-A `render.yaml` and `Dockerfile` are included for a Render Docker deployment. Other Docker-capable hosts can also run it.
-
-## Environment variables
-
-- `PORT` — HTTP port, defaults to `10000`
-- `MAX_SESSIONS` — maximum concurrent isolated browser sessions, defaults to `8`
-- `SESSION_IDLE_MS` — inactive-session lifetime, defaults to 15 minutes
-
-## Current interaction model
-
-The remote viewport supports:
-
-- address/search navigation
-- back / forward / reload / home
-- mouse or touch clicking
-- wheel or touch scrolling
-- keyboard entry
-- an on-screen mobile typing dock
-- responsive viewport resizing
-- automatic download cancellation
+Open `http://localhost:10000`.

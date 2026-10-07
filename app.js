@@ -1,7 +1,4 @@
-import {
-  AutoTokenizer,
-  env as transformersEnv
-} from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1";
+import { Tokenizer } from "https://cdn.jsdelivr.net/npm/@huggingface/tokenizers@0.2.0";
 
 const $ = (id) => document.getElementById(id);
 
@@ -38,7 +35,8 @@ const els = {
 };
 
 const MODEL_BASE = "https://huggingface.co/Fcouprie/sdxs-512-texte-image/resolve/main";
-const TOKENIZER_MODEL = "IDKiro/sdxs-512-0.9";
+const TOKENIZER_JSON_URL = `${MODEL_BASE}/tokenizer/tokenizer.json`;
+const TOKENIZER_CONFIG_URL = `${MODEL_BASE}/tokenizer/tokenizer_config.json`;
 const ORT_RUNTIME = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js";
 const ORT_ASSET_BASE = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/";
 const CACHE_NAME = "suncanvas-sdxs-v1";
@@ -84,10 +82,6 @@ let currentImageBlob = null;
 let toastTimer = 0;
 let tokenizer = null;
 let ort = null;
-
-transformersEnv.allowLocalModels = false;
-transformersEnv.allowRemoteModels = true;
-transformersEnv.useBrowserCache = true;
 
 function showToast(message) {
   clearTimeout(toastTimer);
@@ -204,16 +198,42 @@ async function ensureRuntime() {
   return ort;
 }
 
+async function fetchJsonCached(url) {
+  const cache = await caches.open(CACHE_NAME);
+  let response = await cache.match(url);
+
+  if (!response) {
+    response = await fetch(url, {
+      cache: "no-store",
+      credentials: "omit",
+      referrerPolicy: "no-referrer"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Tokenizer download failed (${response.status}).`);
+    }
+
+    try {
+      await cache.put(url, response.clone());
+    } catch (error) {
+      console.warn("Tokenizer cache write skipped:", error);
+    }
+  }
+
+  return await response.json();
+}
+
 async function ensureTokenizer() {
   if (tokenizer) return tokenizer;
 
-  setLoadProgress({ message: "Loading small prompt tokenizer…", pct: 2 });
+  setLoadProgress({ message: "Loading prompt tokenizer…", pct: 2 });
 
-  tokenizer = await AutoTokenizer.from_pretrained(TOKENIZER_MODEL, {
-    subfolder: "tokenizer",
-    revision: "main"
-  });
+  const [tokenizerJson, tokenizerConfig] = await Promise.all([
+    fetchJsonCached(TOKENIZER_JSON_URL),
+    fetchJsonCached(TOKENIZER_CONFIG_URL)
+  ]);
 
+  tokenizer = new Tokenizer(tokenizerJson, tokenizerConfig);
   return tokenizer;
 }
 
@@ -384,22 +404,23 @@ async function withSession(file, callback) {
 }
 
 function tokenizePrompt(tok, prompt) {
-  return tok(prompt, {
-    padding: "max_length",
-    max_length: MAX_TOKENS,
-    truncation: true
-  });
+  return tok.encode(prompt);
 }
 
 function tokenIdsFromEncoding(encoded) {
-  const tensor = encoded.input_ids;
-  const raw = tensor?.data ?? tensor;
-  const flat = Array.isArray(raw?.[0]) ? raw[0] : Array.from(raw || []);
+  const raw = Array.isArray(encoded?.ids) ? encoded.ids : [];
+  const clipped = raw.slice(0, MAX_TOKENS);
+
+  // CLIP uses 49407 as end-of-text. Preserve an EOT token if truncation
+  // removed it, then pad remaining positions with the configured pad id 0.
+  if (raw.length > MAX_TOKENS && clipped.length === MAX_TOKENS) {
+    clipped[MAX_TOKENS - 1] = 49407;
+  }
+
   const ids = new BigInt64Array(MAX_TOKENS);
 
   for (let i = 0; i < MAX_TOKENS; i++) {
-    const value = flat[i] ?? 1;
-    ids[i] = typeof value === "bigint" ? value : BigInt(value);
+    ids[i] = BigInt(clipped[i] ?? 0);
   }
 
   return ids;

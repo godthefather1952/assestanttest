@@ -497,7 +497,7 @@ function getSessionId(req) {
   return parseCookies(req).sb_session || "";
 }
 
-async function getSession(req, res) {
+async function getSession(req, res, { touch = false } = {}) {
   const id = getSessionId(req);
   if (!validSessionId(id)) {
     res.status(404).json({ error: "Session expired" });
@@ -578,7 +578,7 @@ app.get("/api/screenshot", async (req, res) => {
 });
 
 app.post("/api/navigate", rateLimit(60, 60_000, "navigate"), async (req, res) => {
-  const session = await getSession(req, res);
+  const session = await getSession(req, res, { touch: true });
   if (!session) return;
   try {
     const normalized = normalizeNavigation(req.body?.target);
@@ -615,7 +615,7 @@ for (const [routeName, action] of [
 }
 
 app.post("/api/click", async (req, res) => {
-  const session = await getSession(req, res);
+  const session = await getSession(req, res, { touch: true });
   if (!session) return;
   const x = clamp(req.body?.x, 0, 4000);
   const y = clamp(req.body?.y, 0, 4000);
@@ -636,7 +636,7 @@ app.post("/api/click", async (req, res) => {
 });
 
 app.post("/api/scroll", async (req, res) => {
-  const session = await getSession(req, res);
+  const session = await getSession(req, res, { touch: true });
   if (!session) return;
   try {
     const dx = clamp(Math.abs(req.body?.dx), 0, 2000) * Math.sign(Number(req.body?.dx) || 0);
@@ -649,7 +649,7 @@ app.post("/api/scroll", async (req, res) => {
 });
 
 app.post("/api/type", async (req, res) => {
-  const session = await getSession(req, res);
+  const session = await getSession(req, res, { touch: true });
   if (!session) return;
   const text = String(req.body?.text || "").slice(0, 2000);
   try {
@@ -661,7 +661,7 @@ app.post("/api/type", async (req, res) => {
 });
 
 app.post("/api/key", async (req, res) => {
-  const session = await getSession(req, res);
+  const session = await getSession(req, res, { touch: true });
   if (!session) return;
   const key = String(req.body?.key || "");
   const allowed = new Set([
@@ -679,7 +679,7 @@ app.post("/api/key", async (req, res) => {
 });
 
 app.post("/api/viewport", async (req, res) => {
-  const session = await getSession(req, res);
+  const session = await getSession(req, res, { touch: true });
   if (!session) return;
   try {
     const width = clamp(req.body?.width, 320, 1920);

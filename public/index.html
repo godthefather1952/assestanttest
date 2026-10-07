@@ -15,26 +15,16 @@
         <button class="icon-btn" id="forwardBtn" aria-label="Forward" title="Forward">→</button>
         <button class="icon-btn" id="reloadBtn" aria-label="Reload" title="Reload">↻</button>
         <button class="icon-btn home-btn" id="homeBtn" aria-label="Home" title="Home">⌂</button>
-
         <form id="navForm" class="omnibox" autocomplete="off">
           <span class="shield" aria-hidden="true">◇</span>
-          <input
-            id="address"
-            aria-label="Address and search"
-            inputmode="url"
-            autocapitalize="off"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
-            placeholder="Search or enter address"
-          >
+          <input id="address" aria-label="Address and search" inputmode="url" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Search or enter address">
           <button class="go-btn" id="goBtn" type="submit">Go</button>
         </form>
       </div>
-
       <div class="subbar">
         <div class="privacy-pill"><span class="dot"></span> Isolated session</div>
         <div class="privacy-pill blocked">Downloads blocked</div>
+        <div class="privacy-pill blocked">Private network blocked</div>
         <div class="page-title" id="pageTitle">Sandbox Browser</div>
       </div>
     </header>
@@ -44,11 +34,8 @@
         <div class="spinner"></div>
         <span>Starting isolated browser…</span>
       </div>
-
       <img id="screen" alt="Remote browser page" draggable="false">
-
       <div class="notice" id="notice" role="status"></div>
-
       <div class="keyboard-dock" id="keyboardDock">
         <input id="typeBox" autocomplete="off" autocapitalize="sentences" placeholder="Type into selected field">
         <button id="sendTextBtn">Type</button>
@@ -61,9 +48,10 @@
     <footer class="statusbar">
       <span id="status">Connecting…</span>
       <button id="keyboardBtn" class="keyboard-btn">Keyboard</button>
+      <button id="endSessionBtn" class="keyboard-btn danger-btn">End session</button>
+      <button id="signOutBtn" class="keyboard-btn">Sign out</button>
     </footer>
   </main>
-
   <script src="/app.js" defer></script>
 </body>
 </html>

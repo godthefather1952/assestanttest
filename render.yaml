@@ -6,7 +6,15 @@ services:
     autoDeploy: true
     healthCheckPath: /health
     envVars:
+      - key: BROWSER_ACCESS_KEY
+        sync: false
       - key: MAX_SESSIONS
-        value: "8"
+        value: "2"
       - key: SESSION_IDLE_MS
-        value: "900000"
+        value: "300000"
+      - key: SESSION_MAX_MS
+        value: "1800000"
+      - key: CHROMIUM_SANDBOX
+        value: "true"
+      - key: APP_PUBLIC_HOST
+        value: "assestanttest.onrender.com"

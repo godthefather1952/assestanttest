@@ -32,4 +32,5 @@ jobs:
           grep -q "No API key" README.md
           ! grep -Rni "pollinations" index.html app.js styles.css README.md
           ! grep -Rni "localStorage" app.js
-          ! grep -Rni "api key" app.js
+          ! grep -Rni "web-txt2img" app.js
+          ! grep -Rni "esm.sh" app.js

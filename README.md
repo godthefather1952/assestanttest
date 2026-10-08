@@ -1,4 +1,16 @@
-# NIGHTSHIFT v1
+# NIGHTSHIFT — Scanner v2.1
+
+## Browser-only data availability update
+
+No backend, account signup, or API key is required. Automatic discovery now targets pool markets identified by DexScreener as Raydium, Orca, Meteora or PumpSwap. These identifiers select the market adapter; they are not proof of safety. Search can still show other markets, explicitly marked unsupported. Pump.fun bonding curves require a future reserve-based adapter and cannot become Ready in this version. Token-2022 remains unsupported for approval.
+
+Missing, null, blank, invalid or negative liquidity values display UNKNOWN rather than zero. A genuine reported zero still fails the floor. Unknown liquidity blocks approvals and simulated liquidity exits. Positions without usable market data become stale. The status distinguishes READY, REJECTED, AWAITING DATA, WATCHING and UNSUPPORTED.
+
+RPC reads use PublicNode, OnFinality and Solana's public mainnet endpoint in that order. Requests are serialized and paced (350 ms between starts), duplicate in-flight requests share work, successful reads are cached for at most 60 seconds in memory (128 entries), and failed provider/method combinations enter a 60-second cooldown. Errors remain visible in the data-source panel. Failed requests are not cached as successful checks. When holder lookup fails after mint validation succeeds, the known mint checks stay visible but approval remains blocked. Verification coverage reflects those partial results.
+
+The scanner publishes candidates before RPC completion and refreshes individual results progressively. It checks up to eight eligible candidates automatically per scan. Discovery still samples recent profiles/boosts (up to 40 addresses), with a SOL search fallback when no supported pools are found; it does not scan all Solana tokens. Token search remains available.
+
+The page displays **Scanner v2.1** so users can identify an outdated deployment or tab. Public providers can still rate-limit, disable methods or reject browser requests. Pool/vault attribution, bonding-curve reserves and sell-quote validation are not implemented; raw concentration above 90% remains blocked. These changes improve data handling without relaxing safety rules or guaranteeing any token qualifies.
 
 A mobile-first Solana opportunity desk that runs as a static webpage. NIGHTSHIFT discovers live markets, performs checks it can actually verify, calculates deterministic Momentum and Opportunity scores, and presents the best setups in a minimalist Mission Control interface.
 
@@ -139,12 +151,12 @@ This is an opportunity-analysis and simulated position-management interface, not
 
 ## Network and data handling
 
-The page contacts `api.dexscreener.com`, `api.mainnet-beta.solana.com`, and `api.mainnet.solana.com`. Those providers receive your IP address and requested token addresses; DexScreener also receives search terms. Token images are limited to `https://cdn.dexscreener.com`, whose operator can observe image requests. Requests omit credentials and referrers, reject API redirects, and time out after 9 seconds per endpoint. RPC fallback may take longer overall.
+The page contacts `api.dexscreener.com`, `solana-rpc.publicnode.com`, `solana.api.onfinality.io`, and `api.mainnet.solana.com`. Those providers receive your IP address and requested token addresses; DexScreener also receives search terms. Token images are limited to `https://cdn.dexscreener.com`, whose operator can observe image requests. Requests omit credentials and referrers, reject API redirects, and time out after 9 seconds per endpoint. RPC fallback may take longer overall.
 
 A Content Security Policy restricts scripts to same-origin `app.js`, connections to the listed APIs, and images to the listed CDN. Inline event handlers are removed. Solana addresses are validated as base58-encoded 32-byte values before requests and rendering; dynamic attributes are escaped. No wallet, private key, transaction-signing or transaction-submission functionality is present. Local state is not intentionally uploaded by this app; export creates a user-downloaded JSON file.
 
 ## Regression checks
 
-Run `node --test tests/guardrails.test.cjs` (Node 18+). These tests use mocked RPC and market data and cover approval gates, verification coverage, holder integrity, stale quotes, independent monitoring, persistence, restore validation, injection inputs and review races.
+Run `node --test tests/guardrails.test.cjs tests/scanner-data.test.cjs` (Node 18+). These tests use mocked RPC and market data and cover approval gates, verification coverage, holder integrity, stale quotes, independent monitoring, persistence, restore validation, injection inputs, review races, unknown liquidity, market selection, provider fallback, request deduplication and cooldowns.
 
 An optional browser smoke test is available with Playwright and Chromium installed: `node tests/browser-smoke.cjs`. It uses mocked external responses and checks the mobile scan/review/approve/export/restore flow. Neither suite establishes live RPC reliability or real-world token safety.

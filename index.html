@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://api.dexscreener.com https://api.mainnet-beta.solana.com https://api.mainnet.solana.com; img-src https://cdn.dexscreener.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://solana-rpc.publicnode.com https://solana.api.onfinality.io https://api.dexscreener.com https://api.mainnet-beta.solana.com https://api.mainnet.solana.com; img-src https://cdn.dexscreener.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#07090d">
@@ -28,7 +28,7 @@ button,input{font:inherit;color:inherit}.app{width:min(100%,560px);margin:auto;p
 </head>
 <body><main class="app">
 <header class="top"><div><p class="ey">SOLANA DESK</p><h1 class="brand">NIGHTSHIFT</h1></div><button class="live" id="refresh">LIVE</button></header>
-<div id="storageStatus" class="notice hidden" role="alert"></div>
+<div class="notice"><p id="dataHealth" role="status">Scanner v2.1 · Loading data sources…</p></div><div id="storageStatus" class="notice hidden" role="alert"></div>
 <section class="sum"><div><strong id="pnl" class="good">+$0.00</strong><small>tracked P&amp;L</small></div><div><strong id="posCount">0</strong><small>positions</small></div><div><strong id="desk">Scanning</strong><small id="deskSub">risk rules active</small></div></section>
 
 <section class="view on" id="home">
@@ -66,4 +66,4 @@ button,input{font:inherit;color:inherit}.app{width:min(100%,560px);margin:auto;p
 <button class="undo-swipe hidden" id="undoSwipe" type="button">↶ Undo last swipe</button>
 <div class="toast hidden" id="toast"></div>
 
-<script src="app.js" defer></script></body></html>
+<script src="scanner-data.js?v=2.1" defer></script><script src="app.js?v=2.1" defer></script></body></html>

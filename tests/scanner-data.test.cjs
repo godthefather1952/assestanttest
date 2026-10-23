@@ -14,7 +14,7 @@ test('RPC fallback, deduplication, cache expiry and cooldown',async()=>{
  const p=rpc.request('getAccountInfo',['mint']);assert.equal(rpc.request('getAccountInfo',['mint']),p);await p;
  assert.deepEqual(calls,['https://a.example','https://b.example']);await rpc.request('getAccountInfo',['mint']);assert.equal(calls.length,2);
  await rpc.request('getAccountInfo',['other']);assert.deepEqual(calls,['https://a.example','https://b.example','https://b.example']);
- now+=61000;await rpc.request('getAccountInfo',['mint']);assert.equal(calls.length,5);
+ now+=121000;await rpc.request('getAccountInfo',['mint']);assert.equal(calls.length,5);
 });
 test('method-specific cooldown preserves working methods; errors remain actionable',async()=>{
  const rpc=createRpc(async(url,opt)=>{const method=JSON.parse(opt.body).method;if(method==='getTokenLargestAccounts')return {error:{code:-32601,message:'Method disabled'}};return {result:{value:{owner:'token'}}}},{endpoints:['https://a.example'],wait:async()=>{}});

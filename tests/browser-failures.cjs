@@ -101,3 +101,11 @@ test('quotes follow the selected size and a tracked position can be quoted for i
  await page.locator('#approveBtn').click();await page.locator('[data-nav="positions"]').click();await page.locator('[data-quotepos]').click();await page.waitForFunction(()=>/ROUTE AVAILABLE/.test(document.querySelector('#positionsList').innerText),{},{timeout:15000});
  assert.match(await page.locator('#positionsList').innerText(),/not an executed swap/);
 });
+test('Token-2022: benign extensions can be Ready; a permanent delegate, a transfer fee or a missing extension list cannot',async t=>{
+ const T22='TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',K='GAhY6goNLmaQwDfYRMBLtbfSacSTdp3kyixmjLZXRq1q';
+ const meta=[{extension:'metadataPointer',state:{authority:null,metadataAddress:A}},{extension:'tokenMetadata',state:{updateAuthority:null}}];
+ const cases=[['benign',{mintOwner:T22,extensions:meta},true,/Token-2022 extensions[\s\S]*?Only benign or inert extensions: metadataPointer, tokenMetadata[\s\S]*?VERIFIED/],['permanent delegate',{mintOwner:T22,extensions:[...meta,{extension:'permanentDelegate',state:{delegate:K}}]},false,/Token-2022 extensions[\s\S]*?Permanent delegate[\s\S]*?FAILED/],['transfer fee',{mintOwner:T22,extensions:[...meta,{extension:'transferFeeConfig',state:{olderTransferFee:{transferFeeBasisPoints:100},newerTransferFee:{transferFeeBasisPoints:100},transferFeeConfigAuthority:null}}]},false,/1% fee[\s\S]*?FAILED/],['no extension list',{mintOwner:T22},false,/Token-2022 extensions[\s\S]*?UNKNOWN/]];
+ for(const [name,chain,enabled,re] of cases){
+  await t.test(name,async t=>{const {page}=await setup(t,{chain});await page.waitForFunction(()=>Number(document.querySelector('#scanned').textContent)>0);await review(page);await page.waitForFunction(()=>!/Validating/.test(document.querySelector('#review').innerText)&&/Token-2022 extensions|Safety status/.test(document.querySelector('#review').innerText)&&!/Pool verification has not run/.test(document.querySelector('#review').innerText));
+   const text=await page.locator('#review').innerText();assert.match(text,re);assert.equal(await page.locator('#approveBtn').isEnabled(),enabled);assert.equal((await stored(page)).positions.length,0)})}
+});

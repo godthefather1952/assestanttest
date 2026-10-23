@@ -2,6 +2,8 @@
 'use strict';
 var config=root.NightshiftConfig||{};
 var ENDPOINTS=Array.isArray(config.rpcEndpoints)&&config.rpcEndpoints.length?config.rpcEndpoints.slice():['https://solana-rpc.publicnode.com','https://solana.api.onfinality.io/public','https://api.mainnet.solana.com'];
+// A user-supplied Helius key goes first; the public endpoints stay as fallback.
+if(typeof config.heliusKey==='string'&&/^[A-Za-z0-9-]{16,64}$/.test(config.heliusKey))ENDPOINTS.unshift('https://mainnet.helius-rpc.com/?api-key='+encodeURIComponent(config.heliusKey));
 var CACHE_TTL={getAccountInfo:120000,getTokenLargestAccounts:120000,getMultipleAccounts:60000};
 var STALE_MAX=600000,MAX_COOLDOWN=900000;
 function liquidity(pair){
@@ -13,7 +15,7 @@ function poolSupported(pair){return ['raydium','orca','meteora','pumpswap'].inde
 function marketStatus(pair){return poolSupported(pair)?'Pool market':String(pair&&pair.dexId||'').toLowerCase()==='pumpfun'?'Bonding curve — unsupported':'Market type unsupported'}
 // Classifies a provider failure so cooldowns match the cause instead of one flat penalty.
 function classify(e){
-  var message=String(e&&e.message||e),status=e&&e.status,m;
+  var message=String(e&&e.message||e).replace(/api-key=[^&\s"')]+/gi,'api-key=***'),status=e&&e.status,m;
   if(!status&&(m=/^(?:HTTP )?(\d{3})$/.exec(message)))status=+m[1];
   if(!status&&(m=/\bHTTP (\d{3})\b/.exec(message)))status=+m[1];
   if(e&&e.name==='AbortError')return {kind:'timeout',base:30000,message:'Timed out'};

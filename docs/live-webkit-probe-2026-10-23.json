@@ -1,0 +1,196 @@
+{
+  "startedAt": "2026-10-23T05:28:22.634Z",
+  "engine": "webkit",
+  "browserVersion": "26.5",
+  "origin": "https://godthefather1952.github.io/assestanttest/",
+  "network": [
+    {
+      "event": "request",
+      "at": 1792733308860,
+      "url": "https://solana-rpc.publicnode.com/",
+      "method": "POST",
+      "rpc": "getAccountInfo"
+    },
+    {
+      "event": "response",
+      "at": 1792733316357,
+      "url": "https://solana-rpc.publicnode.com/",
+      "status": 200,
+      "allowOrigin": "*"
+    },
+    {
+      "event": "request",
+      "at": 1792733316358,
+      "url": "https://solana-rpc.publicnode.com/",
+      "method": "POST",
+      "rpc": "getTokenLargestAccounts"
+    },
+    {
+      "event": "response",
+      "at": 1792733324469,
+      "url": "https://solana-rpc.publicnode.com/",
+      "status": 429,
+      "allowOrigin": "*"
+    },
+    {
+      "event": "request",
+      "at": 1792733324470,
+      "url": "https://solana.api.onfinality.io/public",
+      "method": "POST",
+      "rpc": "getTokenLargestAccounts"
+    },
+    {
+      "event": "response",
+      "at": 1792733331307,
+      "url": "https://solana.api.onfinality.io/public",
+      "status": 429,
+      "allowOrigin": "*"
+    },
+    {
+      "event": "request",
+      "at": 1792733331308,
+      "url": "https://api.mainnet.solana.com/",
+      "method": "POST",
+      "rpc": "getTokenLargestAccounts"
+    },
+    {
+      "event": "response",
+      "at": 1792733337816,
+      "url": "https://api.mainnet.solana.com/",
+      "status": 403,
+      "allowOrigin": "*"
+    },
+    {
+      "event": "request",
+      "at": 1792733398826,
+      "url": "https://solana-rpc.publicnode.com/",
+      "method": "POST",
+      "rpc": "getTokenLargestAccounts"
+    },
+    {
+      "event": "failed",
+      "at": 1792733407826,
+      "url": "https://solana-rpc.publicnode.com/",
+      "error": "Load request cancelled"
+    },
+    {
+      "event": "request",
+      "at": 1792733407826,
+      "url": "https://solana.api.onfinality.io/public",
+      "method": "POST",
+      "rpc": "getTokenLargestAccounts"
+    },
+    {
+      "event": "response",
+      "at": 1792733412036,
+      "url": "https://solana.api.onfinality.io/public",
+      "status": 429,
+      "allowOrigin": "*"
+    },
+    {
+      "event": "request",
+      "at": 1792733412036,
+      "url": "https://api.mainnet.solana.com/",
+      "method": "POST",
+      "rpc": "getTokenLargestAccounts"
+    },
+    {
+      "event": "response",
+      "at": 1792733414792,
+      "url": "https://api.mainnet.solana.com/",
+      "status": 403,
+      "allowOrigin": "*"
+    }
+  ],
+  "console": [
+    "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ],
+  "documentStatus": 200,
+  "finalUrl": "https://godthefather1952.github.io/assestanttest/",
+  "version": "Scanner v2.1 · Browser-only · Pool markets: Raydium, Orca, Meteora, PumpSwap. RPC checks pending.",
+  "rounds": {
+    "calls": [
+      {
+        "label": "initial mint",
+        "method": "getAccountInfo",
+        "start": 1792733308858,
+        "end": 1792733316356,
+        "ok": true,
+        "valuePresent": true
+      },
+      {
+        "label": "initial holders",
+        "method": "getTokenLargestAccounts",
+        "start": 1792733316356,
+        "end": 1792733337814,
+        "ok": false,
+        "error": "getTokenLargestAccounts unavailable — solana-rpc.publicnode.com: 429; solana.api.onfinality.io: 429; api.mainnet.solana.com: 403"
+      },
+      {
+        "label": "immediate repeat (cache or cooldown)",
+        "method": "getTokenLargestAccounts",
+        "start": 1792733337814,
+        "end": 1792733337815,
+        "ok": false,
+        "error": "getTokenLargestAccounts unavailable — solana-rpc.publicnode.com: 429 (cooldown); solana.api.onfinality.io: 429 (cooldown); api.mainnet.solana.com: 403 (cooldown)"
+      }
+    ],
+    "health": {
+      "https://solana-rpc.publicnode.com getAccountInfo": {
+        "message": "OK",
+        "time": 1792733316356,
+        "retryAt": 0
+      },
+      "https://solana-rpc.publicnode.com getTokenLargestAccounts": {
+        "message": "429",
+        "time": 1792733324467,
+        "retryAt": 1792733384467
+      },
+      "https://solana.api.onfinality.io/public getTokenLargestAccounts": {
+        "message": "429",
+        "time": 1792733331306,
+        "retryAt": 1792733391306
+      },
+      "https://api.mainnet.solana.com getTokenLargestAccounts": {
+        "message": "403",
+        "time": 1792733337814,
+        "retryAt": 1792733397814
+      }
+    },
+    "prepareRecovery": true
+  },
+  "recovery": {
+    "start": 1792733398824,
+    "end": 1792733414791,
+    "ok": false,
+    "error": "getTokenLargestAccounts unavailable — solana-rpc.publicnode.com: Timed out; solana.api.onfinality.io: 429; api.mainnet.solana.com: 403",
+    "health": {
+      "https://solana-rpc.publicnode.com getAccountInfo": {
+        "message": "OK",
+        "time": 1792733316356,
+        "retryAt": 0
+      },
+      "https://solana-rpc.publicnode.com getTokenLargestAccounts": {
+        "message": "Timed out",
+        "time": 1792733407824,
+        "retryAt": 1792733467824
+      },
+      "https://solana.api.onfinality.io/public getTokenLargestAccounts": {
+        "message": "429",
+        "time": 1792733412034,
+        "retryAt": 1792733472034
+      },
+      "https://api.mainnet.solana.com getTokenLargestAccounts": {
+        "message": "403",
+        "time": 1792733414791,
+        "retryAt": 1792733474791
+      }
+    }
+  },
+  "cspViolations": [],
+  "completedAt": "2026-10-23T05:30:14.794Z"
+}

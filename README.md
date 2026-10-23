@@ -160,3 +160,24 @@ A Content Security Policy restricts scripts to same-origin `app.js`, connections
 Run `node --test tests/guardrails.test.cjs tests/scanner-data.test.cjs` (Node 18+). These tests use mocked RPC and market data and cover approval gates, verification coverage, holder integrity, stale quotes, independent monitoring, persistence, restore validation, injection inputs, review races, unknown liquidity, market selection, provider fallback, request deduplication and cooldowns.
 
 An optional browser smoke test is available with Playwright and Chromium installed: `node tests/browser-smoke.cjs`. It uses mocked external responses and checks the mobile scan/review/approve/export/restore flow. Neither suite establishes live RPC reliability or real-world token safety.
+
+### Browser failure checks and live probes
+
+Install Playwright (the October 23 verification used 1.62.1) and its browser dependencies. Run from the repository root:
+
+```sh
+npm install --no-save playwright@1.62.1
+npx playwright install --with-deps chromium webkit
+node tests/browser-smoke.cjs
+node --test tests/browser-failures.cjs
+BROWSER=webkit node tests/browser-smoke.cjs
+BROWSER=webkit node --test tests/browser-failures.cjs
+```
+
+The failure suite covers unknown versus zero liquidity, holder-only and total provider outages, delayed verification while switching reviews, duplicate approval blocking, stale position handling without fabricated exits, browser request pacing, cooldown retry eligibility and the 63% coverage ceiling. Provider responses are mocked. The cooldown test advances the RPC client's injected time source by 61 seconds; request pacing uses real browser requests and timers. WebKit uses iPhone device emulation on Linux; it does not certify actual iPhone Safari, iOS file handling or background behavior.
+
+`CHROMIUM_EXECUTABLE_PATH` optionally selects an existing Chromium binary in constrained test environments. It is not needed for a standard Playwright installation.
+
+For a separate read-only live probe, run `node tests/browser-live-probe.cjs` or `BROWSER=webkit node tests/browser-live-probe.cjs`. This loads the deployed GitHub Pages origin, isolates RPC traffic by mocking only discovery, calls the real providers, checks immediate cooldown/cache behavior, waits a real 61 seconds and retries holder lookup. `SCANNER_URL` selects another deployed origin; `PROBE_OUTPUT` selects the JSON result path (default `/tmp/nightshift-live-probe.json`). `USE_ENV_PROXY=1` uses an environment-provided HTTPS proxy when required. The probe preserves browser certificate checks and records network failures, CORS headers and CSP violations. It does not send wallet transactions, establish sellability or assert that unavailable providers recovered.
+
+See [the October 23 verification report](docs/scanner-verification-2026-10-23.md) for observed results and remaining limits.

@@ -1,0 +1,86 @@
+// Run from repo root: node --test tests/browser-failures.cjs
+// BROWSER=webkit selects iPhone-emulated WebKit, not an actual iPhone Safari test.
+const {test,before,after}=require('node:test');
+const assert=require('node:assert/strict');
+const {chromium,webkit,devices}=require('playwright');
+const http=require('node:http');
+const fs=require('node:fs');
+const A='So11111111111111111111111111111111111111112';
+const B='11111111111111111111111111111111';
+const C='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+let browser,server,origin;
+before(async()=>{
+ server=http.createServer((req,res)=>{const p=new URL(req.url,'http://localhost').pathname;const file=p==='/app.js'?'app.js':p==='/scanner-data.js'?'scanner-data.js':'index.html';res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(file))}).listen(0,'127.0.0.1');
+ await new Promise(r=>server.once('listening',r));origin='http://127.0.0.1:'+server.address().port;
+ const engine=process.env.BROWSER==='webkit'?webkit:chromium;
+ browser=await engine.launch({headless:true,...(engine===chromium&&process.env.CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.CHROMIUM_EXECUTABLE_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']}: {})});
+});
+after(async()=>{if(browser)await browser.close();if(server)await new Promise(r=>server.close(r))});
+function pair(address=A,symbol='FIRST'){return {chainId:'solana',dexId:'raydium',baseToken:{address,symbol,name:symbol},priceUsd:'1',liquidity:{usd:200000},volume:{m5:10000,h1:20000},txns:{m5:{buys:95,sells:5}},priceChange:{m5:10},pairCreatedAt:Date.now()-600000}}
+function response(q){return {jsonrpc:'2.0',id:1,result:q.method==='getAccountInfo'?{value:{owner:C,data:{parsed:{type:'mint',info:{supply:'100',mintAuthority:null,freezeAuthority:null}}}}}:{value:[{address:C,amount:'20'}]}}}
+async function setup(t,options={}){
+ const context=await browser.newContext(process.env.BROWSER==='webkit'?devices['iPhone 13']:{viewport:{width:390,height:844},hasTouch:true,isMobile:true});
+ t.after(()=>context.close());const page=await context.newPage();page.setDefaultTimeout(12000);
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));t.after(()=>assert.deepEqual(errors,[]));
+ const calls=[];let market=options.market||[pair()];
+ await page.route('https://api.dexscreener.com/**',route=>route.fulfill({json:route.request().url().includes('/tokens/')?market:market.map(p=>({chainId:'solana',tokenAddress:p.baseToken.address}))}));
+ await page.route(/https:\/\/(solana-rpc\.publicnode\.com|solana\.api\.onfinality\.io|api\.mainnet\.solana\.com)\//,async route=>{
+  const q=route.request().postDataJSON();calls.push({host:new URL(route.request().url()).hostname,method:q.method,address:q.params[0],at:Date.now()});
+  if(options.rpc)return options.rpc(route,q);
+  return route.fulfill({json:response(q)});
+ });
+ await page.goto(origin);await page.waitForFunction(()=>Number(document.querySelector('#scanned').textContent)>0);
+ return {page,calls,setMarket(v){market=v}};
+}
+async function review(page,address=A){if(await page.locator('#close').isVisible())await page.locator('#close').click();await page.locator('[data-nav="discover"]').click();await page.locator('#candidates [data-review="'+address+'"]').click();await page.locator('#approveBtn').waitFor()}
+async function stored(page){return page.evaluate(()=>JSON.parse(localStorage.getItem('nightshift_v1')).state)}
+test('unknown liquidity is AWAITING DATA, zero is REJECTED, both disable approval',async t=>{
+ for(const usd of [null,0]){await t.test(String(usd),async t=>{const {page,calls}=await setup(t,{market:[{...pair(),liquidity:{usd}}]});await review(page);const text=await page.locator('#review').innerText();assert.match(text,usd===null?/Liquidity UNKNOWN[\s\S]*AWAITING DATA/:/below the \$10,000 hard floor[\s\S]*REJECTED/);assert.equal(await page.locator('#approveBtn').isEnabled(),false);assert.equal(calls.length,0);assert.equal((await stored(page)).positions.length,0)})}
+});
+test('holder-only outage shows partial checks, each provider error and disabled approval',async t=>{
+ const {page,calls}=await setup(t,{rpc:(route,q)=>q.method==='getTokenLargestAccounts'?route.fulfill({status:429,json:{error:'rate limited'}}):route.fulfill({json:response(q)})});
+ await page.waitForFunction(()=>document.querySelector('#dataHealth').textContent.includes('api.mainnet.solana.com'));
+ await review(page);await page.waitForFunction(()=>document.querySelector('#review').innerText.includes('Coverage 50%'));
+ const text=await page.locator('#review').innerText();assert.match(text,/Mint authority\s+DISABLED/);assert.match(text,/Top 10 accounts\s+UNKNOWN/);assert.match(text,/getTokenLargestAccounts unavailable/);assert.match(text,/429/);assert.match(text,/AWAITING DATA/);assert.equal(await page.locator('#approveBtn').isEnabled(),false);
+ assert.deepEqual([...new Set(calls.filter(c=>c.method==='getTokenLargestAccounts').map(c=>c.host))],['solana-rpc.publicnode.com','solana.api.onfinality.io','api.mainnet.solana.com']);assert.equal((await stored(page)).positions.length,0);
+});
+test('all providers fail: unknown safety, visible errors, no approval',async t=>{
+ const {page}=await setup(t,{rpc:route=>route.fulfill({status:503,json:{error:'unavailable'}})});
+ await page.waitForFunction(()=>document.querySelector('#dataHealth').textContent.includes('getTokenLargestAccounts: 503')&&document.querySelector('#refresh').textContent==='LIVE');
+ await review(page);await page.waitForFunction(()=>document.querySelector('#review').innerText.includes('getAccountInfo unavailable'));
+ const text=await page.locator('#review').innerText();assert.match(text,/Verified Safety\s+Unknown/);assert.match(text,/Coverage 13%/);assert.match(text,/503/);assert.equal(await page.locator('#approveBtn').isEnabled(),false);assert.equal((await stored(page)).positions.length,0);
+});
+test('late verification cannot replace a different open review',async t=>{
+ let release;const gate=new Promise(r=>release=r);t.after(()=>release());
+ const {page}=await setup(t,{market:[pair(),pair(B,'SECOND')],rpc:async(route,q)=>{if(q.params[0]===A)await gate;return route.fulfill({json:response(q)})}});
+ await review(page,A);await page.locator('#close').click();await page.locator('#candidates [data-review="'+B+'"]').click();assert.match(await page.locator('#review h2').innerText(),/SECOND/);assert.equal(await page.locator('#approveBtn').isEnabled(),false);
+ release();await page.waitForFunction(()=>document.querySelector('#ready').textContent==='2');assert.match(await page.locator('#review h2').innerText(),/SECOND/);assert.equal(await page.locator('#approveBtn').isEnabled(),true);assert.equal((await stored(page)).positions.length,0);
+});
+test('unknown position liquidity marks stale without an exit; confirmed zero exits',async t=>{
+ const {page,setMarket}=await setup(t);await page.waitForFunction(()=>document.querySelector('#ready').textContent==='1');await review(page);await page.locator('#approveBtn').click();assert.equal((await stored(page)).positions.length,1);
+ await review(page);assert.equal(await page.locator('#approveBtn').isEnabled(),false);assert.match(await page.locator('#approveBtn').innerText(),/Already tracking/);await page.locator('#close').click();
+ setMarket([{...pair(),liquidity:{usd:null},priceUsd:'.8'}]);
+ await page.waitForFunction(()=>JSON.parse(localStorage.getItem('nightshift_v1')).state.positions[0]?.stale===true,{},{timeout:20000});
+ let state=await stored(page);assert.equal(state.positions.length,1);assert.equal(state.history.filter(h=>h.type==='WIN'||h.type==='LOSS').length,0);
+ await page.locator('[data-nav="positions"]').click();assert.match(await page.locator('#positionsList').innerText(),/STALE/i);
+ setMarket([{...pair(),liquidity:{usd:0}}]);await page.waitForFunction(()=>JSON.parse(localStorage.getItem('nightshift_v1')).state.positions.length===0,{},{timeout:20000});
+ state=await stored(page);assert.equal(state.history.filter(h=>h.type==='WIN'||h.type==='LOSS').length,1);assert.match(state.history[0].note,/Liquidity fell below/);
+});
+test('browser RPC requests are paced; cooldown suppresses requests then permits retry',async t=>{
+ let fail=true;const {page,calls}=await setup(t,{market:[{...pair(),liquidity:{usd:null}}],rpc:route=>fail?route.fulfill({status:503,json:{error:'outage'}}):route.fulfill({json:{result:{value:[]}}})});
+ await page.evaluate(()=>{window.probeOffset=0;window.testRpc=NightshiftData.createRpc(async(url,opt)=>{const r=await fetch(url,opt);if(!r.ok)throw Error('HTTP '+r.status);return r.json()},{now:()=>Date.now()+window.probeOffset})});
+ const attempt=()=>page.evaluate(async()=>{try{await window.testRpc.request('getTokenLargestAccounts',['test']);return 'success'}catch(e){return e.message}});
+ assert.match(await attempt(),/unavailable/);assert.equal(calls.length,3);
+ for(let i=1;i<calls.length;i++)assert.ok(calls[i].at-calls[i-1].at>=325,'350ms pacing with 25ms observer tolerance');
+ assert.match(await attempt(),/cooldown/);assert.equal(calls.length,3);
+ fail=false;await page.evaluate(()=>window.probeOffset+=61000);assert.equal(await attempt(),'success');assert.equal(calls.length,4);
+ assert.equal(await attempt(),'success');assert.equal(calls.length,4,'successful response cached');
+});
+test('Ready coverage is only 63%; DEX labels do not establish pool attribution or sellability',async t=>{
+ const {page,calls}=await setup(t);await page.waitForFunction(()=>document.querySelector('#ready').textContent==='1');await review(page);
+ const text=await page.locator('#review').innerText();assert.match(text,/Coverage 63%/);assert.match(text,/not a probability of safety/);assert.match(text,/Transfer restrictions\s+NOT VERIFIED IN V1/);
+ // The mocked market deliberately has no pool address or vault/reserve evidence.
+ // This documents a current trust boundary, not proof that the market is safe.
+ assert.equal(pair().pairAddress,undefined);assert.equal(await page.locator('#approveBtn').isEnabled(),true);
+ assert.ok(calls.every(c=>c.address===A));assert.deepEqual([...new Set(calls.map(c=>c.method))].sort(),['getAccountInfo','getTokenLargestAccounts']);
+});

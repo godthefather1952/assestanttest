@@ -1,0 +1,9 @@
+# Not deployed. Review worker/README.md before running `wrangler deploy`.
+# Secrets (HELIUS_API_KEY, JUPITER_API_KEY) are never stored here; set them with `wrangler secret put` or in the dashboard.
+name = "nightshift-proxy"
+main = "worker/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://godthefather1952.github.io"

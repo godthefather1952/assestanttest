@@ -1,6 +1,20 @@
-# NIGHTSHIFT — Scanner v2.1
+# NIGHTSHIFT — Scanner v2.2
 
-## Browser-only data availability update
+## v2.2: provider resilience, on-chain market evidence and sell quotes
+
+Wallet execution stays disabled, approval remains manual and every guardrail value below is unchanged. Provider pricing and the backend decision are in [docs/provider-research-2026-10-23.md](docs/provider-research-2026-10-23.md); nothing has been purchased or deployed.
+
+- **Providers.** RPC, DexScreener and the quote API each have pacing, in-flight de-duplication, caching and cooldowns that depend on the failure (429 backs off 60 s doubling to 15 min and honours `Retry-After`; 401/403 waits 10 min; a disabled method waits 30 min; timeouts and network errors 30–60 s). A recent RPC result may be shown only after every provider fails, with its original timestamp and a stale flag; evidence older than 10 minutes blocks approval. The data panel names provider, method, error and time to retry.
+- **Price and liquidity are separate.** A fresh DexScreener price keeps the −12% stop, breakeven, targets, trailing stop, momentum and time exits armed even when liquidity is missing. Liquidity exits fire only on a known value (a reported zero still exits). A position becomes STALE only when its price is missing or older than two minutes, the market is no longer a supported pool or no longer the tracked pool. Exit signals are marked at the observed price; no fill or executable quote is ever assumed.
+- **Pools are verified on-chain.** The pool address from the market feed is read from RPC: its owner must be a known DEX program for the reported DEX, its layout must name the market's base and quote mints, and both vaults must be token accounts holding those mints. Layouts for Raydium AMM v4/CPMM/CLMM, Orca Whirlpool, Meteora DLMM and PumpSwap were checked against live mainnet accounts on 23 Oct 2026; a wrong layout fails closed. Meteora DAMM v2/Dynamic AMM are recognised but unsupported. Ready now requires a verified pool.
+- **Concentration.** Raw top-10 share counts every account; the infrastructure-adjusted share removes only the verified vaults of the one pool the feed reported (other pools or CEX wallets are not removed). Adjusted share gates when a pool is verified, otherwise raw gates. Shares are of total supply over the 20 largest accounts the RPC returns.
+- **Sell quotes.** For $10/$20/$35 (and for a tracked position's remaining size) the app requests an exact-amount token→USDC quote (`GET /swap/v2/order` with no `taker`, so no transaction or wallet) and shows route availability, quote time and freshness (30 s), estimated and minimum output (at 1% slippage), API-reported price impact, fees, the computed shortfall versus the DexScreener mark and the route. Unreported fields read "not reported". A definitive no-route response blocks approval; an unreachable provider is shown as NOT VERIFIED and does not. A quote is an estimate, not a simulation or guarantee.
+- **Bonding curves** remain unsupported: no reserve or migration adapter is validated, and a Pump.fun-owned account is never accepted as a pool.
+- **Evidence instead of a score.** "Verified Safety 100/100" and coverage percentages are gone. Each check shows VERIFIED, REPORTED (third-party, not confirmed on-chain), FAILED, UNKNOWN, UNSUPPORTED or NOT CHECKED, with its source and time. Deployer history, insider clustering and transfer restrictions are NOT CHECKED. Opportunity still uses an internal score for ranking only.
+- **Backend-ready, none required.** `config.js` can point `rpcEndpoints` and `quoteBase` at an approved server-side proxy that holds provider keys; never put a key in that file. Add any new host to the CSP in `index.html`. Public RPCs still reject `getTokenLargestAccounts` (HTTP 429 in the 23 Oct live check), so without a keyed provider holders stay UNKNOWN and nothing becomes Ready.
+
+
+## Browser-only data availability update (v2.1, superseded where noted above)
 
 No backend, account signup, or API key is required. Automatic discovery now targets pool markets identified by DexScreener as Raydium, Orca, Meteora or PumpSwap. These identifiers select the market adapter; they are not proof of safety. Search can still show other markets, explicitly marked unsupported. Pump.fun bonding curves require a future reserve-based adapter and cannot become Ready in this version. Token-2022 remains unsupported for approval.
 
@@ -91,7 +105,7 @@ Opportunity combines approximately:
 
 Hard safety failures cap Opportunity at 35. Unverified on-chain safety caps it at 74. Both the UI and approval function require Ready, Opportunity >=78, verified core checks, fresh candidate and position quotes, healthy storage, sufficient liquidity and available position capacity. Duplicate approvals are rejected.
 
-**Verified Safety** reports the existing heuristic only when core on-chain checks are available; otherwise it displays **Unknown**. **Verification Coverage** is separate: 8 categories comprise liquidity, token program, mint authority, freeze authority, holder data, deployer history, insider clustering and transfer restrictions. Coverage is 1/8 (13%, rounded) before core RPC verification and at most 5/8 (63%) afterwards. The last three remain explicitly unknown. A Verified Safety value of 100 means no penalty among observed checks, not complete verification or a probability of safety. Opportunity retains its prior weighting; coverage is not an additional score multiplier.
+**Evidence statuses** replace the former Verified Safety value and coverage percentage (see v2.2 above). Opportunity keeps its prior weighting using an internal penalty tally that is never shown as a safety score; it is capped at 74 until core checks and the pool are verified, and at 35 after any hard failure.
 
 ## Simulated EXIT engine
 
@@ -104,7 +118,7 @@ Default v1 exit rules:
 - Target 1: at **+20%**, simulate closing **35%** of the original position
 - Target 2: at **+40%**, simulate closing another **35%**
 - Final **30%** becomes a runner with a **15% trailing stop from the observed peak**
-- Liquidity exit if live liquidity falls below **$10,000**
+- Liquidity exit if known live liquidity falls below **$10,000** (unknown liquidity never triggers or disables other exits)
 - Liquidity exit if live liquidity falls **20% or more from entry**
 - Momentum-collapse exit when recent transaction activity is sufficient, buys fall below roughly **35%**, and 5-minute price change is **-7% or worse**
 - Setup time limits for trades that fail to develop: about **20 minutes for SNIPE, 90 minutes for MOMENTUM, 4 hours for RUNNER, and 60 minutes for PASS**
@@ -151,13 +165,13 @@ This is an opportunity-analysis and simulated position-management interface, not
 
 ## Network and data handling
 
-The page contacts `api.dexscreener.com`, `solana-rpc.publicnode.com`, `solana.api.onfinality.io`, and `api.mainnet.solana.com`. Those providers receive your IP address and requested token addresses; DexScreener also receives search terms. Token images are limited to `https://cdn.dexscreener.com`, whose operator can observe image requests. Requests omit credentials and referrers, reject API redirects, and time out after 9 seconds per endpoint. RPC fallback may take longer overall.
+The page contacts `api.dexscreener.com`, `api.jup.ag` (sell quotes; the token mint and amount are sent, no wallet), `solana-rpc.publicnode.com`, `solana.api.onfinality.io`, and `api.mainnet.solana.com`. Those providers receive your IP address and requested token addresses; DexScreener also receives search terms. Token images are limited to `https://cdn.dexscreener.com`, whose operator can observe image requests. Requests omit credentials and referrers, reject API redirects, and time out after 9 seconds per endpoint. RPC fallback may take longer overall.
 
 A Content Security Policy restricts scripts to same-origin `app.js`, connections to the listed APIs, and images to the listed CDN. Inline event handlers are removed. Solana addresses are validated as base58-encoded 32-byte values before requests and rendering; dynamic attributes are escaped. No wallet, private key, transaction-signing or transaction-submission functionality is present. Local state is not intentionally uploaded by this app; export creates a user-downloaded JSON file.
 
 ## Regression checks
 
-Run `node --test tests/guardrails.test.cjs tests/scanner-data.test.cjs` (Node 18+). These tests use mocked RPC and market data and cover approval gates, verification coverage, holder integrity, stale quotes, independent monitoring, persistence, restore validation, injection inputs, review races, unknown liquidity, market selection, provider fallback, request deduplication and cooldowns.
+Run `node --test tests/guardrails.test.cjs tests/scanner-data.test.cjs tests/evidence.test.cjs` (Node 18+). These tests use mocked RPC and market data and cover approval gates, verification coverage, holder integrity, stale quotes, independent monitoring, persistence, restore validation, injection inputs, review races, unknown liquidity, market selection, provider fallback, request deduplication and cooldowns.
 
 An optional browser smoke test is available with Playwright and Chromium installed: `node tests/browser-smoke.cjs`. It uses mocked external responses and checks the mobile scan/review/approve/export/restore flow. Neither suite establishes live RPC reliability or real-world token safety.
 
@@ -174,7 +188,7 @@ BROWSER=webkit node tests/browser-smoke.cjs
 BROWSER=webkit node --test tests/browser-failures.cjs
 ```
 
-The failure suite covers unknown versus zero liquidity, holder-only and total provider outages, delayed verification while switching reviews, duplicate approval blocking, stale position handling without fabricated exits, browser request pacing, cooldown retry eligibility and the 63% coverage ceiling. Provider responses are mocked. The cooldown test advances the RPC client's injected time source by 61 seconds; request pacing uses real browser requests and timers. WebKit uses iPhone device emulation on Linux; it does not certify actual iPhone Safari, iOS file handling or background behavior.
+The failure suite covers unknown versus zero liquidity, holder-only and total provider outages, delayed verification while switching reviews, duplicate approval blocking, stale position handling without fabricated exits, browser request pacing, cooldown retry eligibility, price-only stops under unknown liquidity, on-chain pool evidence failures, sell-quote states and per-check evidence. Provider responses are mocked. The cooldown test advances the RPC client's injected time source by 61 seconds; request pacing uses real browser requests and timers. WebKit uses iPhone device emulation on Linux; it does not certify actual iPhone Safari, iOS file handling or background behavior.
 
 `CHROMIUM_EXECUTABLE_PATH` optionally selects an existing Chromium binary in constrained test environments. It is not needed for a standard Playwright installation.
 

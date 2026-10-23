@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://solana-rpc.publicnode.com https://solana.api.onfinality.io https://api.dexscreener.com https://api.jup.ag https://api.mainnet-beta.solana.com https://api.mainnet.solana.com; img-src https://cdn.dexscreener.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://mainnet.helius-rpc.com https://solana-rpc.publicnode.com https://solana.api.onfinality.io https://api.dexscreener.com https://api.jup.ag https://api.mainnet-beta.solana.com https://api.mainnet.solana.com; img-src https://cdn.dexscreener.com; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#07090d">
@@ -24,11 +24,12 @@ button,input{font:inherit;color:inherit}.app{width:min(100%,560px);margin:auto;p
 .stats{display:grid;grid-template-columns:repeat(3,1fr);border-radius:16px;padding:11px;margin-bottom:12px}.stats div{text-align:center;border-right:1px solid var(--line)}.stats div:last-child{border:0}.stats small{display:block;color:var(--muted);font-size:7px}.stats b{font-size:15px}.hist{display:grid;grid-template-columns:7px 1fr auto;gap:8px;border-bottom:1px solid var(--line);padding:10px 2px}.dot{width:7px;height:7px;border-radius:50%;background:#667486;margin-top:4px}.hist.APPROVED .dot,.hist.WIN .dot{background:var(--g)}.hist.REJECTED .dot,.hist.LOSS .dot{background:var(--r)}.hist strong{font-size:9px}.hist span{font-size:8px;color:var(--muted)}
 .nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,560px);height:calc(68px + env(safe-area-inset-bottom));padding:7px 12px env(safe-area-inset-bottom);background:#070a0eea;border-top:1px solid var(--line);backdrop-filter:blur(20px);display:grid;grid-template-columns:repeat(4,1fr);z-index:20}.nav button{border:0;background:none;color:#6e7a8b;font-size:8px}.nav button b{display:block;font-size:18px;margin-bottom:2px}.nav button.on{color:var(--g)}
 .backdrop{position:fixed;inset:0;background:#0009;backdrop-filter:blur(7px);z-index:50;display:flex;align-items:flex-end;justify-content:center}.hidden{display:none!important}.sheet{width:min(100%,560px);max-height:92vh;overflow:auto;background:#0d1218;border-radius:27px 27px 0 0;border:1px solid var(--line);padding:10px 16px calc(20px + env(safe-area-inset-bottom))}.handle{width:36px;height:4px;background:#394451;border-radius:99px;margin:0 auto 10px}.sheetnav{display:flex;align-items:center;justify-content:space-between;margin:2px 0 4px}.backhome{border:0;background:none;color:var(--g);font-weight:700;font-size:11px;padding:8px 4px}.x{border:1px solid var(--line);background:#ffffff05;border-radius:50%;width:31px;height:31px}.reviewtop{display:flex;justify-content:space-between;align-items:center;margin:41px 0 10px}.reviewtop h2{margin:0;font-size:24px}.reviewtop p{font-size:9px;color:var(--muted);margin:3px 0}.block{margin:14px 0}.block h4{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#adb7c3;margin:0 0 7px}.reason{font-size:9px;line-height:1.45;margin:5px 0;color:#cbd3dc}.reason:before{content:"•";color:var(--g);margin-right:7px}.warn .reason:before{color:var(--y)}.table{border:1px solid var(--line);border-radius:14px;overflow:hidden}.tr,.check{display:flex;justify-content:space-between;padding:8px 9px;border-bottom:1px solid var(--line);font-size:8px}.tr:last-child{border:0}.tr span,.check span{color:var(--muted)}.checks{margin-top:11px}.check{border:0;padding:5px 1px}.pass{color:var(--g)}.fail{color:var(--r)}.unknown{color:var(--y)}.sizes{display:flex;gap:5px;margin:14px 0}.sizes button{flex:1;border:1px solid var(--line);background:#ffffff05;border-radius:10px;padding:8px}.sizes button.on{color:var(--g);border-color:#6ff0bd33}.actions{gap:7px}.actions .secondary{width:40%}.actions .primary{width:60%}.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);z-index:100;background:#19222c;border:1px solid var(--line);border-radius:11px;padding:9px 12px;font-size:9px}
+.gear{border:1px solid var(--line);background:#ffffff08;border-radius:99px;width:38px;height:38px;margin-right:8px;font-size:16px}.top>div:last-child,.top .actionsr{display:flex;align-items:center}.field{display:block;margin:14px 0}.field span{display:block;font-size:10px;color:var(--muted);margin-bottom:6px}.field input{width:100%;height:46px;border-radius:13px;border:1px solid var(--line);background:#111821;padding:0 12px;font-size:16px}.field em{font-style:normal;color:var(--g)}.btnrow{display:grid;gap:8px;margin-top:6px}
 </style>
 </head>
 <body><main class="app">
-<header class="top"><div><p class="ey">SOLANA DESK</p><h1 class="brand">NIGHTSHIFT</h1></div><button class="live" id="refresh">LIVE</button></header>
-<div class="notice"><p id="dataHealth" role="status">Scanner v2.2 · Loading data sources…</p></div><div id="storageStatus" class="notice hidden" role="alert"></div>
+<header class="top"><div><p class="ey">SOLANA DESK</p><h1 class="brand">NIGHTSHIFT</h1></div><div class="actionsr"><button class="gear" id="settingsBtn" type="button" aria-label="Open provider key settings">⚙</button><button class="live" id="refresh">LIVE</button></div></header>
+<div class="notice"><p id="dataHealth" role="status">Scanner v2.3 · Loading data sources…</p></div><div id="storageStatus" class="notice hidden" role="alert"></div>
 <section class="sum"><div><strong id="pnl" class="good">+$0.00</strong><small>tracked P&amp;L</small></div><div><strong id="posCount">0</strong><small>positions</small></div><div><strong id="desk">Scanning</strong><small id="deskSub">risk rules active</small></div></section>
 
 <section class="view on" id="home">
@@ -60,10 +61,21 @@ button,input{font:inherit;color:inherit}.app{width:min(100%,560px);margin:auto;p
 <div id="historyList"></div>
 </section>
 
+<section class="view" id="settings">
+<div class="page"><div><p class="ey">SETTINGS</p><h2>Provider Keys</h2></div></div>
+<div class="notice"><p>Optional. Free Helius and Jupiter keys make holder data and sell quotes dependable. Keys are saved only in this browser on this device. They are not in the repo, not in backups and not shown again after saving. Anyone who can use this unlocked browser could read them from developer tools, so use free-plan keys only and never a key that can spend money. Wallet execution stays disabled.</p></div>
+<form id="keysForm" autocomplete="off">
+<label class="field"><span>Helius API key (RPC) · <em id="heliusState">not set</em></span><input id="heliusInput" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Paste key, or the full RPC URL"></label>
+<label class="field"><span>Jupiter API key (sell quotes) · <em id="jupiterState">not set</em></span><input id="jupiterInput" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Paste key"></label>
+<div class="btnrow"><button class="primary" id="saveKeys" type="button">Save and reload</button><button class="secondary" id="testKeys" type="button">Test keys</button><button class="secondary" id="removeKeys" type="button">Remove saved keys</button></div>
+</form>
+<div class="notice" id="keyStatus" role="status" style="margin-top:12px">Leave a field blank to keep its saved key.</div>
+</section>
+
 <nav class="nav"><button class="on" data-nav="home"><b>⌂</b>Home</button><button data-nav="discover"><b>⌕</b>Discover</button><button data-nav="positions"><b>▥</b>Positions</button><button data-nav="history"><b>◷</b>History</button></nav>
 </main>
 <div class="backdrop hidden" id="backdrop"><section class="sheet"><div class="handle"></div><div class="sheetnav"><button class="backhome" id="reviewHome" type="button">← Home</button><button class="x" id="close" type="button" aria-label="Close review">×</button></div><div id="review"></div></section></div>
 <button class="undo-swipe hidden" id="undoSwipe" type="button">↶ Undo last swipe</button>
 <div class="toast hidden" id="toast"></div>
 
-<script src="config.js?v=2.2" defer></script><script src="scanner-data.js?v=2.2" defer></script><script src="pool-evidence.js?v=2.2" defer></script><script src="sell-quote.js?v=2.2" defer></script><script src="app.js?v=2.2" defer></script></body></html>
+<script src="config.js?v=2.3" defer></script><script src="keys.js?v=2.3" defer></script><script src="scanner-data.js?v=2.3" defer></script><script src="pool-evidence.js?v=2.3" defer></script><script src="sell-quote.js?v=2.3" defer></script><script src="app.js?v=2.3" defer></script><script src="settings.js?v=2.3" defer></script></body></html>

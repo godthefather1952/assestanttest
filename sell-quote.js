@@ -44,7 +44,8 @@ function createQuoteClient(gate,options){
   function quoteSell(args){
     var ctx={now:now(),inputMint:args.mint,outputMint:USDC,amount:args.amount,sellUsd:args.sellUsd,markUsd:args.markUsd};
     var url=BASE+'/order?inputMint='+encodeURIComponent(args.mint)+'&outputMint='+USDC+'&amount='+args.amount.toString()+'&slippageBps='+SLIPPAGE_BPS;
-    return gate.run(url,{method:'GET',headers:{Accept:'application/json'}},{ttl:cacheMs}).then(function(r){ctx.now=r.fetchedAt;return parseOrder(r.value,ctx)},function(e){return failed(e,ctx)});
+    var headers={Accept:'application/json'};if(typeof config.quoteKey==='string'&&config.quoteKey)headers['x-api-key']=config.quoteKey;
+    return gate.run(url,{method:'GET',headers:headers},{ttl:cacheMs}).then(function(r){ctx.now=r.fetchedAt;return parseOrder(r.value,ctx)},function(e){return failed(e,ctx)});
   }
   return {quoteSell:quoteSell};
 }

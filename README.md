@@ -1,4 +1,14 @@
-# NIGHTSHIFT — Scanner v2.2
+# NIGHTSHIFT — Scanner v2.3
+
+## v2.3: enter provider keys on the site
+
+Tap the ⚙ button, paste a free Helius key (or the full Helius RPC URL) and optionally a Jupiter key, then **Save and reload**. **Test keys** checks them first without saving. No command line, deploy or backend is needed.
+
+- Keys are stored only in this browser under `nightshift_keys_v1`: not in the repo, not in state backups or exports, never shown again (only "ending ####"), entered in password fields, and redacted from error text. They go only to `mainnet.helius-rpc.com` (query parameter, as Helius requires) and `api.jup.ag` (`x-api-key` header).
+- With a Helius key, Helius is tried first and the public endpoints remain as fallback. Without keys nothing changes.
+- Risk: anyone who can use the unlocked browser can read the keys from developer tools, and a script injected into the page could too (the CSP limits this to same-origin scripts). Use free-plan keys only, never a key that can spend money, and rotate a key if a device is lost. Keys are per device.
+- The Cloudflare Worker proxy in PR #5 is optional and not needed for this.
+
 
 ## v2.2: provider resilience, on-chain market evidence and sell quotes
 
@@ -11,7 +21,7 @@ Wallet execution stays disabled, approval remains manual and every guardrail val
 - **Sell quotes.** For $10/$20/$35 (and for a tracked position's remaining size) the app requests an exact-amount token→USDC quote (`GET /swap/v2/order` with no `taker`, so no transaction or wallet) and shows route availability, quote time and freshness (30 s), estimated and minimum output (at 1% slippage), API-reported price impact, fees, the computed shortfall versus the DexScreener mark and the route. Unreported fields read "not reported". A definitive no-route response blocks approval; an unreachable provider is shown as NOT VERIFIED and does not. A quote is an estimate, not a simulation or guarantee.
 - **Bonding curves** remain unsupported: no reserve or migration adapter is validated, and a Pump.fun-owned account is never accepted as a pool.
 - **Evidence instead of a score.** "Verified Safety 100/100" and coverage percentages are gone. Each check shows VERIFIED, REPORTED (third-party, not confirmed on-chain), FAILED, UNKNOWN, UNSUPPORTED or NOT CHECKED, with its source and time. Deployer history, insider clustering and transfer restrictions are NOT CHECKED. Opportunity still uses an internal score for ranking only.
-- **Backend-ready, none required.** `config.js` can point `rpcEndpoints` and `quoteBase` at an approved server-side proxy that holds provider keys; never put a key in that file. Add any new host to the CSP in `index.html`. Public RPCs still reject `getTokenLargestAccounts` (HTTP 429 in the 23 Oct live check), so without a keyed provider holders stay UNKNOWN and nothing becomes Ready.
+- **Backend-ready, none required.** `config.js` can point `rpcEndpoints` and `quoteBase` at an approved server-side proxy; never put a key in that file (use the Settings screen). Add any new host to the CSP in `index.html`. Public RPCs still reject `getTokenLargestAccounts` (HTTP 429 in the 23 Oct live check), so without a keyed provider holders stay UNKNOWN and nothing becomes Ready.
 
 
 ## Browser-only data availability update (v2.1, superseded where noted above)
@@ -165,7 +175,7 @@ This is an opportunity-analysis and simulated position-management interface, not
 
 ## Network and data handling
 
-The page contacts `api.dexscreener.com`, `api.jup.ag` (sell quotes; the token mint and amount are sent, no wallet), `solana-rpc.publicnode.com`, `solana.api.onfinality.io`, and `api.mainnet.solana.com`. Those providers receive your IP address and requested token addresses; DexScreener also receives search terms. Token images are limited to `https://cdn.dexscreener.com`, whose operator can observe image requests. Requests omit credentials and referrers, reject API redirects, and time out after 9 seconds per endpoint. RPC fallback may take longer overall.
+The page contacts `api.dexscreener.com`, `mainnet.helius-rpc.com` (only if you save a Helius key), `api.jup.ag` (sell quotes; the token mint and amount are sent, no wallet), `solana-rpc.publicnode.com`, `solana.api.onfinality.io`, and `api.mainnet.solana.com`. Those providers receive your IP address and requested token addresses; DexScreener also receives search terms. Token images are limited to `https://cdn.dexscreener.com`, whose operator can observe image requests. Requests omit credentials and referrers, reject API redirects, and time out after 9 seconds per endpoint. RPC fallback may take longer overall.
 
 A Content Security Policy restricts scripts to same-origin `app.js`, connections to the listed APIs, and images to the listed CDN. Inline event handlers are removed. Solana addresses are validated as base58-encoded 32-byte values before requests and rendering; dynamic attributes are escaped. No wallet, private key, transaction-signing or transaction-submission functionality is present. Local state is not intentionally uploaded by this app; export creates a user-downloaded JSON file.
 

@@ -1,4 +1,13 @@
-# NIGHTSHIFT — Scanner v2.3
+# NIGHTSHIFT — Scanner v2.4
+
+## v2.4: Token-2022 extension review
+
+Token-2022 mints are no longer blocked wholesale. The mint's parsed extension list is reviewed and shown as its own evidence row. A token passes only if every extension is benign (`metadataPointer`, `tokenMetadata`, group/group-member pointers and tokens, `mintCloseAuthority`) or present but inert (an unset permanent delegate or transfer hook, a zero and locked transfer fee, an initialized default account state with no freeze authority).
+
+Blocked, as a hard failure that caps the score and prevents approval: a permanent delegate (can move or burn any holder's tokens), a transfer hook (or a hook authority that could set one), any non-zero transfer fee or a fee authority that could set one later, frozen-by-default accounts, non-transferable, pausable, confidential transfer/mint-burn, scaled or interest-bearing display amounts, and **any extension the app does not recognise**. If the RPC returns no parsed extension list the token stays UNKNOWN and cannot be approved.
+
+Limits: this reads the mint only. It does not examine swap-level behaviour, so the sell quote and the rest of the evidence still apply, and deployer history and insider clustering remain NOT CHECKED. In a live sample on 23 Oct 2026, 20 of 21 recent Token-2022 mints carried only metadata extensions and passed; one carried a transfer fee and was blocked.
+
 
 ## v2.3: enter provider keys on the site
 
@@ -26,7 +35,7 @@ Wallet execution stays disabled, approval remains manual and every guardrail val
 
 ## Browser-only data availability update (v2.1, superseded where noted above)
 
-No backend, account signup, or API key is required. Automatic discovery now targets pool markets identified by DexScreener as Raydium, Orca, Meteora or PumpSwap. These identifiers select the market adapter; they are not proof of safety. Search can still show other markets, explicitly marked unsupported. Pump.fun bonding curves require a future reserve-based adapter and cannot become Ready in this version. Token-2022 remains unsupported for approval.
+No backend, account signup, or API key is required. Automatic discovery now targets pool markets identified by DexScreener as Raydium, Orca, Meteora or PumpSwap. These identifiers select the market adapter; they are not proof of safety. Search can still show other markets, explicitly marked unsupported. Pump.fun bonding curves require a future reserve-based adapter and cannot become Ready in this version. Token-2022 approval depends on the extension review (v2.4).
 
 Missing, null, blank, invalid or negative liquidity values display UNKNOWN rather than zero. A genuine reported zero still fails the floor. Unknown liquidity blocks approvals and simulated liquidity exits. Positions without usable market data become stale. The status distinguishes READY, REJECTED, AWAITING DATA, WATCHING and UNSUPPORTED.
 

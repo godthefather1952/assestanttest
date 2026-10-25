@@ -1,4 +1,13 @@
-# NIGHTSHIFT — Scanner v2.4
+# NIGHTSHIFT — Scanner v2.5
+
+## v2.5: buy versus sell dollars for tracked positions
+
+Counting trades hides size: one large buy or dump looked like one trade. With a Helius key saved, each tracked position now also reads recent swaps through its verified pool and totals buy and sell **dollars**. Approving a position records the pool's quote and base vaults; every 90 s (page open and visible) the app reads the newest 40 signatures of the quote vault and up to 15 not-yet-read transactions, and classifies a swap as a buy when quote tokens enter the quote vault while base tokens leave the base vault, a sell for the reverse. Liquidity changes, failed or one-sided transactions and anything unclear are excluded, never guessed. Quote tokens supported: USDC, USDT and wrapped SOL (SOL converted at the market feed's implied price).
+
+New exit rule (simulated, like the others): **sell-dollar dominance** closes the position when the flow reading is under 3 minutes old, has at least 6 swaps and $100 traded, sells are at least 65% of the dollars and the 5-minute price change is −7% or worse. It adds to, and does not replace, the existing trade-count rule. The position card shows buys, sells, largest buy, sell share, how many of the 5-minute window's trades were read ("sample 15 of 40" when partial) and the read time; stale or failed reads are shown and ignored.
+
+Limits: busy tokens trade far more than 40 times in five minutes, so the reading is usually a sample of the newest swaps, labelled as such. The 65%, $100 and 6-swap thresholds are judgement calls that have not been tested against real outcomes. It does not identify wallets, so it cannot tell a whale from a bot or the creator. Cost: about 1 Helius credit per signature list or transaction read, at most about 16 credits per position per 90 s (about 15,000 credits per position-day if the page stays open and busy all day, which is about 46% of the free 1M monthly credits for a single position; typical use is far lower because reads only happen while a position is open and the page is visible, and already-read transactions are never read twice). Without a Helius key nothing is read and the card says a key is needed. Wallet execution stays disabled.
+
 
 ## v2.4: Token-2022 extension review
 
@@ -140,6 +149,7 @@ Default v1 exit rules:
 - Liquidity exit if known live liquidity falls below **$10,000** (unknown liquidity never triggers or disables other exits)
 - Liquidity exit if live liquidity falls **20% or more from entry**
 - Momentum-collapse exit when recent transaction activity is sufficient, buys fall below roughly **35%**, and 5-minute price change is **-7% or worse**
+- Sell-dollar dominance exit (needs a Helius key; see v2.5): sells are at least **65%** of recent swap dollars with at least 6 swaps and $100 traded, and the 5-minute price change is **-7% or worse**
 - Setup time limits for trades that fail to develop: about **20 minutes for SNIPE, 90 minutes for MOMENTUM, 4 hours for RUNNER, and 60 minutes for PASS**
 - Time exits only fire when the position has not produced enough follow-through
 

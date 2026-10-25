@@ -5,7 +5,7 @@ const {pair:basePair,poolAccount,vaultAccount,A,B,C,POOL}=require('./harness.cjs
 const Pools=require('../pool-evidence.js');
 const kp=n=>Pools.base58(Uint8Array.from({length:32},(_,i)=>i===0?n:7));
 const POOL2=kp(2),VB1=kp(3),VB2=kp(4);
-const FILES=['app.js','config.js','keys.js','settings.js','token2022.js','scanner-data.js','pool-evidence.js','sell-quote.js'];
+const FILES=['app.js','config.js','keys.js','settings.js','token2022.js','trade-flow.js','scanner-data.js','pool-evidence.js','sell-quote.js'];
 const USDC='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 function serve(){
  const server=http.createServer((req,res)=>{const name=new URL(req.url,'http://localhost').pathname.slice(1);const file=FILES.includes(name)?name:'index.html';res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(file))}).listen(0,'127.0.0.1');

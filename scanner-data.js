@@ -4,7 +4,9 @@ var config=root.NightshiftConfig||{};
 var ENDPOINTS=Array.isArray(config.rpcEndpoints)&&config.rpcEndpoints.length?config.rpcEndpoints.slice():['https://solana-rpc.publicnode.com','https://solana.api.onfinality.io/public','https://api.mainnet.solana.com'];
 // A user-supplied Helius key goes first; the public endpoints stay as fallback.
 if(typeof config.heliusKey==='string'&&/^[A-Za-z0-9-]{16,64}$/.test(config.heliusKey))ENDPOINTS.unshift('https://mainnet.helius-rpc.com/?api-key='+encodeURIComponent(config.heliusKey));
-var CACHE_TTL={getAccountInfo:120000,getTokenLargestAccounts:120000,getMultipleAccounts:60000};
+var CACHE_TTL={getAccountInfo:120000,getTokenLargestAccounts:120000,getMultipleAccounts:60000,getSignaturesForAddress:15000,getTransaction:600000};
+// Methods whose result is the payload itself (no {value} wrapper). A null transaction is returned but never cached or counted as a provider failure.
+var RAW_RESULT={getSignaturesForAddress:1,getTransaction:1};
 var STALE_MAX=600000,MAX_COOLDOWN=900000;
 function liquidity(pair){
   var value=pair&&pair.liquidity&&pair.liquidity.usd;
@@ -59,8 +61,8 @@ function createRpc(fetcher,options){
         try{
           var result=await fetcher(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:method,params:params})});
           if(result.error)throw Error('RPC '+result.error.code+': '+String(result.error.message).slice(0,160));
-          if(!result.result||!Object.prototype.hasOwnProperty.call(result.result,'value'))throw Error('Malformed RPC response');
-          markSuccess(health,hk,now());
+          if(RAW_RESULT[method]){if(!Object.prototype.hasOwnProperty.call(result,'result'))throw Error('Malformed RPC response');markSuccess(health,hk,now());if(result.result===null)return null}
+          else{if(!result.result||!Object.prototype.hasOwnProperty.call(result.result,'value'))throw Error('Malformed RPC response');markSuccess(health,hk,now())}
           cache.set(k,{time:now(),value:result.result});meta.set(k,{fetchedAt:now(),stale:false,endpoint:host});
           while(cache.size>128){var oldest=cache.keys().next().value;cache.delete(oldest);meta.delete(oldest)}
           return result.result;

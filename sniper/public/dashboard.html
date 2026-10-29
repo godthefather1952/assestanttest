@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NIGHTSHIFT paper sniper</title>
+<style>
+:root{--bg:#0b0d10;--card:#151a20;--line:#252c35;--text:#e8edf2;--muted:#8a96a3;--good:#38d39f;--bad:#ff6b6b;--warn:#f5b84d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;max-width:980px;margin:auto}
+h1{font-size:18px;margin:0 0 4px}h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 8px}
+.sub{color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.card b{display:block;font-size:20px}.card small{color:var(--muted)}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-weight:500}
+.scroll{overflow-x:auto}button{background:#2a3340;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px}button.stop{background:#4a1f24;border-color:#7a2e36}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.banner{background:#1c2430;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px}
+code{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<h1>NIGHTSHIFT paper sniper</h1>
+<div class="sub">Paper mode: no wallet, nothing is bought or sold. Every fill is simulated against the live curve.</div>
+<div id="state" class="banner">Connecting…</div>
+<div class="row"><button class="stop" id="kill">Kill switch: stop new entries</button><button id="resume">Resume</button><span id="msg" class="sub"></span></div>
+<div class="grid" id="cards"></div>
+<h2>Open positions</h2><div class="scroll"><table id="positions"></table></div>
+<h2>Recent trades</h2><div class="scroll"><table id="trades"></table></div>
+<h2>Recent decisions</h2><div class="scroll"><table id="decisions"></table></div>
+<script>
+'use strict';
+let token = sessionStorage.getItem('nsToken') || '';
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sol = (n) => (n == null ? '–' : (n >= 0 ? '+' : '') + n.toFixed(4));
+const pct = (n) => (n == null ? '–' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%');
+const ago = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? s + 's' : s < 3600 ? Math.round(s / 60) + 'm' : Math.round(s / 3600) + 'h'; };
+async function api(path, method = 'GET') {
+  const r = await fetch(path, { method, headers: token ? { 'x-dashboard-token': token } : {} });
+  if (r.status === 401) { token = prompt('Dashboard token') || ''; sessionStorage.setItem('nsToken', token); throw new Error('token required'); }
+  return r.json();
+}
+function table(el, head, rows) { el.innerHTML = '<tr>' + head.map((h) => '<th>' + esc(h) + '</th>').join('') + '</tr>' + (rows.length ? rows.join('') : '<tr><td colspan="' + head.length + '" class="sub">None yet.</td></tr>'); }
+async function refresh() {
+  let s;
+  try { s = await api('/api/status'); } catch (e) { $('#state').textContent = 'Dashboard unreachable: ' + e.message; return; }
+  const f = s.feed || {}, r = s.risk, t = s.totals;
+  $('#state').innerHTML = (f.healthy ? '<span class="good">Feed live</span>' : '<span class="bad">Feed down</span>') + ' · slot ' + esc(f.lastSlot || '–') + ' · ' + esc(f.notifications || 0) + ' txs · reconnects ' + esc(f.reconnects || 0) + (f.lastError ? ' · <span class="warn">' + esc(f.lastError) + '</span>' : '') + '<br>' + (r.entriesAllowed ? '<span class="good">Entries allowed</span>' : '<span class="bad">Entries blocked: ' + esc(r.blockedBy) + '</span>');
+  const cards = [['Paper P&L (SOL)', sol(t.pnlSol), t.pnlSol >= 0 ? 'good' : 'bad'], ['Today (SOL)', sol(r.dailyPnlSol), r.dailyPnlSol >= 0 ? 'good' : 'bad'], ['Trades', t.trades, ''], ['Win rate', t.winRatePct == null ? '–' : t.winRatePct.toFixed(0) + '%', ''], ['Failed entries', t.entryFailed, ''], ['Costs (SOL)', t.costsSol.toFixed(4), ''], ['Launches seen', s.tracker.creates, ''], ['Decisions', t.decisions + ' (' + t.buys + ' buy)', ''], ['Tracking now', s.tracker.tracking, ''], ['Open', r.open + ' / ' + s.config.risk.maxOpen, '']];
+  $('#cards').innerHTML = cards.map((c) => '<div class="card"><small>' + esc(c[0]) + '</small><b class="' + c[2] + '">' + esc(c[1]) + '</b></div>').join('');
+  table($('#positions'), ['Token', 'Size', 'Held', 'Change', 'Curve SOL', 'State'], s.positions.map((p) => '<tr><td>' + esc(p.symbol || p.mint.slice(0, 6)) + '</td><td>' + p.sizeSol + '</td><td>' + Math.round(p.holdS) + 's</td><td class="' + ((p.changePct || 0) >= 0 ? 'good' : 'bad') + '">' + pct(p.changePct) + '</td><td>' + (p.solRaised == null ? '–' : p.solRaised.toFixed(1)) + '</td><td>' + (p.closing ? 'selling' : p.takeProfitDone ? 'trailing' : 'open') + '</td></tr>'));
+  table($('#trades'), ['When', 'Token', 'Result', 'P&L (SOL)', 'Held', 'Exit'], s.recentTrades.map((x) => x.kind === 'entry_failed' ? '<tr><td>' + ago(x.at) + '</td><td>' + esc(x.symbol || x.mint.slice(0, 6)) + '</td><td class="warn">entry failed</td><td>' + sol(x.pnlSol) + '</td><td>–</td><td>' + esc(x.reason) + '</td></tr>' : '<tr><td>' + ago(x.closedAt) + '</td><td>' + esc(x.symbol || x.mint.slice(0, 6)) + '</td><td class="' + (x.pnlSol >= 0 ? 'good' : 'bad') + '">' + pct(x.pnlPct) + '</td><td>' + sol(x.pnlSol) + '</td><td>' + Math.round(x.holdS) + 's</td><td>' + esc(x.exitReason) + '</td></tr>'));
+  table($('#decisions'), ['When', 'Token', 'At', 'Decision', 'Reason'], s.recentDecisions.map((d) => '<tr><td>' + ago(d.at) + '</td><td>' + esc(d.symbol || d.mint.slice(0, 6)) + '</td><td>' + d.checkpointS + 's</td><td class="' + (d.action === 'buy' ? 'good' : d.action === 'blocked' ? 'warn' : '') + '">' + esc(d.action) + '</td><td>' + esc(d.reason) + (d.flags && d.flags.length ? ' <code>' + esc(d.flags.join(' · ')) + '</code>' : '') + '</td></tr>'));
+}
+$('#kill').onclick = async () => { try { await api('/api/kill', 'POST'); $('#msg').textContent = 'Kill switch on.'; refresh(); } catch (e) { $('#msg').textContent = e.message; } };
+$('#resume').onclick = async () => { try { await api('/api/resume', 'POST'); $('#msg').textContent = 'Resumed.'; refresh(); } catch (e) { $('#msg').textContent = e.message; } };
+refresh(); setInterval(refresh, 2000);
+</script>
+</body>
+</html>

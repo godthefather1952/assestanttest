@@ -1,5 +1,9 @@
 # NIGHTSHIFT — Scanner v2.5
 
+## Paper sniper (server bot)
+
+[`sniper/`](sniper/README.md) is a separate server bot that watches every new pump.fun launch, decides within the first minute whether it would buy, and simulates the trade on the live bonding curve. It has no wallet and never sends a transaction; it exists to measure whether the early-entry strategy and its filters work before any real money is involved. It runs on a VPS with Node 22 and your own RPC key, and is not part of the GitHub Pages site.
+
 ## v2.5: fail-closed sell quotes, independent position monitoring, graded concentration
 
 - **Approval needs a fresh sell route.** Approve now requires a `ROUTE AVAILABLE` quote for the selected size that is under 30 seconds old. A missing, pending, stale, failed or rate-limited quote blocks approval with its own reason ("Sell quote required", "Sell quote stale — refresh", "Sell quote unavailable", "No sell route"). This supersedes the v2.2 rule that an unreachable quote provider did not block: in the 23 Oct live check an unroutable mint returned HTTP 500, so the old rule let it through. While a review of a Ready setup is open the app keeps its quote current; other reviews are quoted once when opened, so a rejected token left open does not spend the shared keyless quota (0.5 requests/second) and trigger a provider-wide 429.

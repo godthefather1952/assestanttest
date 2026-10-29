@@ -1,0 +1,116 @@
+{
+ "source": "Encoded with @coral-xyz/anchor 0.32.1 BorshCoder from the full pump IDL in @pump-fun/pump-sdk 4.3.1. Older-layout cases drop trailing bytes as the SDK documents (CreateEvent: 1, 2, 10; TradeEvent: 8, 16, 32).",
+ "expected": {
+  "CreateEvent": {
+   "name": "Test Coin",
+   "symbol": "TEST",
+   "uri": "https://ipfs.io/ipfs/QmTest",
+   "mint": "Gq3oZ3iJ9gBqZqq8eq6GdJqZBXKQ7cE7nzbTWRzLpump",
+   "bonding_curve": "Ak7hDCxDSocD2ZgJBCa1ZwLcuDQz5F6n747a7rQtpXE3",
+   "user": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+   "creator": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+   "timestamp": "1761700000",
+   "virtual_token_reserves": "1073000000000000",
+   "virtual_sol_reserves": "30000000000",
+   "real_token_reserves": "793100000000000",
+   "token_total_supply": "1000000000000000",
+   "token_program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+   "is_mayhem_mode": false,
+   "is_cashback_enabled": false,
+   "quote_mint": "11111111111111111111111111111111",
+   "virtual_quote_reserves": "30000000000",
+   "creator_fee_bps": "0",
+   "is_holder_reward": false,
+   "depth": 0
+  },
+  "TradeEvent": {
+   "mint": "Gq3oZ3iJ9gBqZqq8eq6GdJqZBXKQ7cE7nzbTWRzLpump",
+   "sol_amount": "1000000000",
+   "token_amount": "34612903225806",
+   "is_buy": true,
+   "user": "5xot9PVkphiX2adznghwrAuxGs2zeWisNSxMW6hU6Hkj",
+   "timestamp": "1761700001",
+   "virtual_sol_reserves": "31000000000",
+   "virtual_token_reserves": "1038387096774194",
+   "real_sol_reserves": "1000000000",
+   "real_token_reserves": "758487096774194",
+   "fee_recipient": "CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM",
+   "fee_basis_points": "95",
+   "fee": "9500000",
+   "creator": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+   "creator_fee_basis_points": "30",
+   "creator_fee": "3000000",
+   "track_volume": true,
+   "total_unclaimed_tokens": "0",
+   "total_claimed_tokens": "0",
+   "current_sol_volume": "1000000000",
+   "last_update_timestamp": "1761700001",
+   "ix_name": "buy",
+   "mayhem_mode": false,
+   "cashback_fee_basis_points": "0",
+   "cashback": "0",
+   "buyback_fee_basis_points": "0",
+   "buyback_fee": "0",
+   "shareholders": [
+    {
+     "address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+     "share_bps": 7000
+    },
+    {
+     "address": "5xot9PVkphiX2adznghwrAuxGs2zeWisNSxMW6hU6Hkj",
+     "share_bps": 3000
+    }
+   ],
+   "quote_mint": "11111111111111111111111111111111",
+   "quote_amount": "1000000000",
+   "virtual_quote_reserves": "31000000000",
+   "real_quote_reserves": "1000000000",
+   "holder_rewards_bps": "0",
+   "holder_rewards": "0",
+   "creator_fee_unclaimed": "3000000",
+   "quote_transfer_fee": "0"
+  },
+  "CompleteEvent": {
+   "user": "5xot9PVkphiX2adznghwrAuxGs2zeWisNSxMW6hU6Hkj",
+   "mint": "Gq3oZ3iJ9gBqZqq8eq6GdJqZBXKQ7cE7nzbTWRzLpump",
+   "bonding_curve": "Ak7hDCxDSocD2ZgJBCa1ZwLcuDQz5F6n747a7rQtpXE3",
+   "timestamp": "1761700300",
+   "quote_mint": "11111111111111111111111111111111"
+  }
+ },
+ "base64": {
+  "CreateEvent": "G3KpTd7rY3YJAAAAVGVzdCBDb2luBAAAAFRFU1QbAAAAaHR0cHM6Ly9pcGZzLmlvL2lwZnMvUW1UZXN06y5aB1fDe3JBMDEiOxCtLsnlXi5GgXHrWWhFZNljrB+QxLmpzrCuoC/CNNGRKgn6pbJ4kNj5/qtGWVtW1jEAVH6MCIdgv94d3c8ywX8gm4JC7lKq8TH6zYjQ6ixtCwbyfowIh2C/3h3dzzLBfyCbgkLuUqrxMfrNiNDqLG0LBvKgaAFpAAAAAAAQ2EfjzwMAAKwj/AYAAAAAeMX7UdECAACAxqR+jQMABt324e51j94YQl285GzN2rYa/E2DuQ0n/r35KNihi/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwj/AYAAAAAAAAAAAAAAAAA",
+  "TradeEvent": "vdt/007mYe7rLloHV8N7ckEwMSI7EK0uyeVeLkaBcetZaEVk2WOsHwDKmjsAAAAAzinN8XofAAABSbqznfYYPuSKd/OVnwwBMWZAeKvKWT7s4bLxP511BmChaAFpAAAAAAB2vjcHAAAAMuYKVmiwAwAAypo7AAAAADJO+AnXsQIArRHmpPwpRKT6glG++BVCbhv7KMa2ZGZ3YHxq2fVmpkZfAAAAAAAAAGD1kAAAAAAAfowIh2C/3h3dzzLBfyCbgkLuUqrxMfrNiNDqLG0LBvIeAAAAAAAAAMDGLQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAypo7AAAAAKFoAWkAAAAAAwAAAGJ1eQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAB+jAiHYL/eHd3PMsF/IJuCQu5SqvEx+s2I0OosbQsG8lgbSbqznfYYPuSKd/OVnwwBMWZAeKvKWT7s4bLxP511BmC4CwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMqaOwAAAAAAdr43BwAAAADKmjsAAAAAAAAAAAAAAAAAAAAAAAAAAMDGLQAAAAAAAAAAAAAAAAA=",
+  "CompleteEvent": "X3JhnNQumAhJurOd9hg+5Ip385WfDAExZkB4q8pZPuzhsvE/nXUGYOsuWgdXw3tyQTAxIjsQrS7J5V4uRoFx61loRWTZY6wfkMS5qc6wrqAvwjTRkSoJ+qWyeJDY+f6rRllbVtYxAFTMaQFpAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+ },
+ "older": {
+  "CreateEvent": [
+   {
+    "cut": 1,
+    "base64": "G3KpTd7rY3YJAAAAVGVzdCBDb2luBAAAAFRFU1QbAAAAaHR0cHM6Ly9pcGZzLmlvL2lwZnMvUW1UZXN06y5aB1fDe3JBMDEiOxCtLsnlXi5GgXHrWWhFZNljrB+QxLmpzrCuoC/CNNGRKgn6pbJ4kNj5/qtGWVtW1jEAVH6MCIdgv94d3c8ywX8gm4JC7lKq8TH6zYjQ6ixtCwbyfowIh2C/3h3dzzLBfyCbgkLuUqrxMfrNiNDqLG0LBvKgaAFpAAAAAAAQ2EfjzwMAAKwj/AYAAAAAeMX7UdECAACAxqR+jQMABt324e51j94YQl285GzN2rYa/E2DuQ0n/r35KNihi/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwj/AYAAAAAAAAAAAAAAAA="
+   },
+   {
+    "cut": 2,
+    "base64": "G3KpTd7rY3YJAAAAVGVzdCBDb2luBAAAAFRFU1QbAAAAaHR0cHM6Ly9pcGZzLmlvL2lwZnMvUW1UZXN06y5aB1fDe3JBMDEiOxCtLsnlXi5GgXHrWWhFZNljrB+QxLmpzrCuoC/CNNGRKgn6pbJ4kNj5/qtGWVtW1jEAVH6MCIdgv94d3c8ywX8gm4JC7lKq8TH6zYjQ6ixtCwbyfowIh2C/3h3dzzLBfyCbgkLuUqrxMfrNiNDqLG0LBvKgaAFpAAAAAAAQ2EfjzwMAAKwj/AYAAAAAeMX7UdECAACAxqR+jQMABt324e51j94YQl285GzN2rYa/E2DuQ0n/r35KNihi/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwj/AYAAAAAAAAAAAAAAA=="
+   },
+   {
+    "cut": 10,
+    "base64": "G3KpTd7rY3YJAAAAVGVzdCBDb2luBAAAAFRFU1QbAAAAaHR0cHM6Ly9pcGZzLmlvL2lwZnMvUW1UZXN06y5aB1fDe3JBMDEiOxCtLsnlXi5GgXHrWWhFZNljrB+QxLmpzrCuoC/CNNGRKgn6pbJ4kNj5/qtGWVtW1jEAVH6MCIdgv94d3c8ywX8gm4JC7lKq8TH6zYjQ6ixtCwbyfowIh2C/3h3dzzLBfyCbgkLuUqrxMfrNiNDqLG0LBvKgaAFpAAAAAAAQ2EfjzwMAAKwj/AYAAAAAeMX7UdECAACAxqR+jQMABt324e51j94YQl285GzN2rYa/E2DuQ0n/r35KNihi/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwj/AYAAAA="
+   }
+  ],
+  "TradeEvent": [
+   {
+    "cut": 8,
+    "base64": "vdt/007mYe7rLloHV8N7ckEwMSI7EK0uyeVeLkaBcetZaEVk2WOsHwDKmjsAAAAAzinN8XofAAABSbqznfYYPuSKd/OVnwwBMWZAeKvKWT7s4bLxP511BmChaAFpAAAAAAB2vjcHAAAAMuYKVmiwAwAAypo7AAAAADJO+AnXsQIArRHmpPwpRKT6glG++BVCbhv7KMa2ZGZ3YHxq2fVmpkZfAAAAAAAAAGD1kAAAAAAAfowIh2C/3h3dzzLBfyCbgkLuUqrxMfrNiNDqLG0LBvIeAAAAAAAAAMDGLQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAypo7AAAAAKFoAWkAAAAAAwAAAGJ1eQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAB+jAiHYL/eHd3PMsF/IJuCQu5SqvEx+s2I0OosbQsG8lgbSbqznfYYPuSKd/OVnwwBMWZAeKvKWT7s4bLxP511BmC4CwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMqaOwAAAAAAdr43BwAAAADKmjsAAAAAAAAAAAAAAAAAAAAAAAAAAMDGLQAAAAAA"
+   },
+   {
+    "cut": 16,
+    "base64": "vdt/007mYe7rLloHV8N7ckEwMSI7EK0uyeVeLkaBcetZaEVk2WOsHwDKmjsAAAAAzinN8XofAAABSbqznfYYPuSKd/OVnwwBMWZAeKvKWT7s4bLxP511BmChaAFpAAAAAAB2vjcHAAAAMuYKVmiwAwAAypo7AAAAADJO+AnXsQIArRHmpPwpRKT6glG++BVCbhv7KMa2ZGZ3YHxq2fVmpkZfAAAAAAAAAGD1kAAAAAAAfowIh2C/3h3dzzLBfyCbgkLuUqrxMfrNiNDqLG0LBvIeAAAAAAAAAMDGLQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAypo7AAAAAKFoAWkAAAAAAwAAAGJ1eQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAB+jAiHYL/eHd3PMsF/IJuCQu5SqvEx+s2I0OosbQsG8lgbSbqznfYYPuSKd/OVnwwBMWZAeKvKWT7s4bLxP511BmC4CwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMqaOwAAAAAAdr43BwAAAADKmjsAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+   },
+   {
+    "cut": 32,
+    "base64": "vdt/007mYe7rLloHV8N7ckEwMSI7EK0uyeVeLkaBcetZaEVk2WOsHwDKmjsAAAAAzinN8XofAAABSbqznfYYPuSKd/OVnwwBMWZAeKvKWT7s4bLxP511BmChaAFpAAAAAAB2vjcHAAAAMuYKVmiwAwAAypo7AAAAADJO+AnXsQIArRHmpPwpRKT6glG++BVCbhv7KMa2ZGZ3YHxq2fVmpkZfAAAAAAAAAGD1kAAAAAAAfowIh2C/3h3dzzLBfyCbgkLuUqrxMfrNiNDqLG0LBvIeAAAAAAAAAMDGLQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAypo7AAAAAKFoAWkAAAAAAwAAAGJ1eQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAB+jAiHYL/eHd3PMsF/IJuCQu5SqvEx+s2I0OosbQsG8lgbSbqznfYYPuSKd/OVnwwBMWZAeKvKWT7s4bLxP511BmC4CwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMqaOwAAAAAAdr43BwAAAADKmjsAAAAA"
+   }
+  ]
+ }
+}

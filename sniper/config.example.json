@@ -1,0 +1,73 @@
+{
+  "rpc": {
+    "commitment": "processed",
+    "staleMs": 15000
+  },
+  "seed": null,
+  "checkpointsS": [
+    5,
+    15,
+    60
+  ],
+  "entry": {
+    "sizeSol": 0.25,
+    "maxSizeSol": 0.5,
+    "maxSolRaised": 15,
+    "minSolRaised": 1,
+    "minOrganicBuyers": 5,
+    "latencyMs": 800,
+    "buySlippagePct": 12,
+    "failRate": 0.1,
+    "tipSol": 0.001,
+    "priorityFeeSol": 0.00002,
+    "maxCostPct": 5,
+    "checkMint": true,
+    "fetchMetadata": false
+  },
+  "filters": {
+    "requireSolQuote": true,
+    "block0HalfPct": 5,
+    "block0RejectPct": 10,
+    "top10RejectPct": 30,
+    "maxSnipers": 20,
+    "sniperSlots": 2,
+    "copycatWindowH": 24,
+    "creatorMaxLaunches7d": 5,
+    "creatorBoost": 1.5,
+    "creatorQuietDays": 7,
+    "skipIfDevSold": true
+  },
+  "exit": {
+    "timeStopS": 120,
+    "stopPct": -30,
+    "takeProfitPct": 100,
+    "takeProfitFraction": 0.7,
+    "trailPct": 25,
+    "onDevSell": true,
+    "onLinkedSell": true,
+    "completeAtSol": 80,
+    "latencyMs": 800,
+    "slippagePct": 10,
+    "completeHaircutPct": 10,
+    "maxSellAttempts": 3
+  },
+  "risk": {
+    "maxOpen": 3,
+    "dailyLossSol": 1,
+    "maxEntriesPerHour": 20,
+    "maxConsecutiveLosses": 8,
+    "lossPauseMin": 30
+  },
+  "outcomes": {
+    "horizonsS": [
+      60,
+      180,
+      600
+    ],
+    "maxSamples": 4000
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8787
+  }
+}

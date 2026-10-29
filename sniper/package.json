@@ -1,0 +1,14 @@
+{
+  "name": "nightshift-paper-sniper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Paper-mode pump.fun early-entry sniper for NIGHTSHIFT. No wallet: every fill is simulated.",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/main.js",
+    "check-feed": "node src/main.js --check-feed 30",
+    "report": "node src/report.js",
+    "test": "node --test test/*.test.js"
+  }
+}

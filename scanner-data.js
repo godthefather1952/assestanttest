@@ -80,28 +80,39 @@ function createRpc(fetcher,options){
   function detailed(method,params){return request(method,params).then(function(result){var m=meta.get(key(method,params))||{};return {result:result,fetchedAt:m.fetchedAt||now(),stale:!!m.stale,endpoint:m.endpoint||null}})}
   return {request:request,detailed:detailed,meta:function(method,params){return meta.get(key(method,params))||null},health:health};
 }
+// Failures that say something about the provider as a whole. Anything else (a 4xx/5xx answer about one request) cools down
+// only that request's key when the caller supplies one, so one bad token cannot pause the provider for every other token.
+var PROVIDER_WIDE={rate_limited:1,blocked:1,network:1,timeout:1},OUTAGE_KEYS=3,OUTAGE_MS=60000;
 // Shared HTTP gate for non-RPC providers: dedupes, caches, paces and cools down after failures.
 function createGate(name,fetcher,options){
   options=options||{};
   var now=options.now||Date.now,wait=options.wait||function(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})},gap=options.gap===undefined?200:options.gap;
-  var cache=new Map(),pending=new Map(),health={},tail=Promise.resolve(),nextAt=0,hk=name;
+  var cache=new Map(),pending=new Map(),health={},requestKeys=new Set(),serverFails=[],tail=Promise.resolve(),nextAt=0,hk=name;
+  // Expired request-scoped entries are dropped so the health panel and memory do not grow with every token ever quoted.
+  function prune(t){requestKeys.forEach(function(rk){var h=health[rk];if(!h||h.retryAt+MAX_COOLDOWN<=t){delete health[rk];requestKeys.delete(rk)}})}
   function run(url,opt,settings){
     settings=settings||{};
-    var ttl=settings.ttl||0,k=url+(opt&&opt.body||''),cached=cache.get(k);
+    var ttl=settings.ttl||0,k=url+(opt&&opt.body||''),cached=cache.get(k),rk=settings.healthKey?name+' '+settings.healthKey:null;
     if(cached&&ttl&&now()-cached.time<ttl)return Promise.resolve({value:cached.value,fetchedAt:cached.time,cached:true});
     if(pending.has(k))return pending.get(k);
     var work=tail.then(async function(){
-      var h=cooling(health,hk,now());
-      if(h)throw Error(name+': '+h.message+' (cooldown '+seconds(h.retryAt-now())+'s)');
+      prune(now());
+      var h=cooling(health,hk,now())||(rk&&cooling(health,rk,now()));
+      // A request-scoped cooldown repeats that request's last answer (for example a no-route 400), so it is not misread as an outage.
+      if(h){var cool=Error(name+': '+h.message+' (cooldown '+seconds(h.retryAt-now())+'s)');cool.kind='cooldown';if(rk&&h===health[rk]){cool.status=h.status;cool.body=h.body}throw cool}
       await wait(Math.max(0,nextAt-now()));nextAt=now()+gap;
       try{
         var value=await fetcher(url,opt);
         markSuccess(health,hk,now());
+        if(rk){delete health[rk];requestKeys.delete(rk)}
         cache.set(k,{time:now(),value:value});
         while(cache.size>64)cache.delete(cache.keys().next().value);
         return {value:value,fetchedAt:now(),cached:false};
       }catch(e){
-        var failed=markFailure(health,hk,e,now());
+        var scope=rk&&!PROVIDER_WIDE[classify(e).kind]?rk:hk;if(scope===rk)requestKeys.add(rk);
+        var failed=markFailure(health,scope,e,now());if(scope===rk){failed.status=e&&e.status;failed.body=e&&e.body;failed.scoped=true}
+        // Server errors for OUTAGE_KEYS different requests within OUTAGE_MS mean the provider is down, not those tokens: pause it all.
+        if(scope===rk&&failed.kind==='server'){var t=now();serverFails=serverFails.filter(function(x){return t-x.at<OUTAGE_MS&&x.key!==rk});serverFails.push({key:rk,at:t});if(serverFails.length>=OUTAGE_KEYS){markFailure(health,hk,e,t);serverFails=[]}}
         var error=Error(name+': '+failed.message);error.kind=failed.kind;error.status=e&&e.status;error.body=e&&e.body;throw error;
       }
     });
@@ -115,7 +126,11 @@ function createGate(name,fetcher,options){
 function describeHealth(healthMaps,now){
   now=now===undefined?Date.now():now;var lines=[];
   healthMaps.forEach(function(map){Object.keys(map).forEach(function(k){
-    var h=map[k],space=k.indexOf(' '),target=space>0?(function(){try{return new URL(k.slice(0,space)).hostname}catch(e){return k.slice(0,space)}})()+' · '+k.slice(space+1):k;
+    var h=map[k],space=k.indexOf(' ');
+    // Per-token lines are shown only while cooling down, with the token address shortened.
+    if(h.scoped&&h.retryAt<=now)return;
+    var rest=space>0?k.slice(space+1):'';if(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(rest))rest=rest.slice(0,4)+'…'+rest.slice(-4);
+    var target=space>0?(function(){try{return new URL(k.slice(0,space)).hostname}catch(e){return k.slice(0,space)}})()+' · '+rest:k;
     var state=h.kind==='ok'?'OK':h.message+(h.retryAt>now?' — retry in '+seconds(h.retryAt-now)+'s':' — retry allowed')+(h.failures>1?' ('+h.failures+' failures)':'');
     lines.push(target+': '+state);
   })});

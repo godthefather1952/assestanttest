@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const Pools=require('../pool-evidence.js');
 const Quotes=require('../sell-quote.js');
 const Data=require('../scanner-data.js');
-const {harness,pair,verified,pos,A,B,C,POOL,CPMM,VAULT_A,VAULT_B,key,poolAccount,vaultAccount}=require('./harness.cjs');
+const {harness,pair,verified,pos,routeOk,A,B,C,POOL,CPMM,VAULT_A,VAULT_B,key,poolAccount,vaultAccount}=require('./harness.cjs');
 const va=a=>/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a);
 const U='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 function chain(over={}){return async(m,p)=>{if(m==='getAccountInfo')return {value:'pool' in over?over.pool:poolAccount()};if(m==='getMultipleAccounts')return {value:over.vaults||[vaultAccount(A),vaultAccount(C)]};throw Error('unexpected '+m)}}
@@ -26,7 +26,7 @@ test('a pool vault explaining raw concentration passes only after the pool is ve
  assert.equal(v.adjusted,2);const c=api.evaluate(pair(),v);assert.equal(c.hard,false);assert.equal(c.evidence.find(e=>e.id==='rawtop').status,'VERIFIED');assert.match(c.evidence.find(e=>e.id==='adjtop').detail,/excluding 1 verified pool vault/);
  api.setRpc(async(m,p)=>{if(m==='getTokenLargestAccounts')return holders;if(m==='getAccountInfo')return p[1].encoding==='base64'?{value:null}:mint;return {value:[]}});
  const bad=await api.verify(A,pair());assert.equal(bad.pool.status,'FAILED');assert.equal(bad.adjusted,null);const bc=api.evaluate(pair(),bad);assert.equal(bc.hard,true);assert.equal(bc.ready,false)});
-test('Ready requires a verified pool; unknown pool blocks approval with a specific reason',()=>{const {api}=harness();const v=verified(20);for(const status of ['UNKNOWN','UNSUPPORTED','FAILED']){const c=api.evaluate(pair(),{...v,pool:{...v.pool,status,reason:'x',stage:'program'}});assert.equal(c.ready,false);assert.ok(c.opp<=74)}const c=api.evaluate(pair(),{...v,pool:{...v.pool,status:'UNKNOWN',reason:'x',stage:'program'}});api.S.candidates=[c];assert.equal(api.approvalReason(c),'Pool not verified');const ok=api.evaluate(pair(),v);api.S.candidates=[ok];assert.equal(api.approvalReason(ok),'')});
+test('Ready requires a verified pool; unknown pool blocks approval with a specific reason',()=>{const {api}=harness();const v=verified(20);for(const status of ['UNKNOWN','UNSUPPORTED','FAILED']){const c=api.evaluate(pair(),{...v,pool:{...v.pool,status,reason:'x',stage:'program'}});assert.equal(c.ready,false);assert.ok(c.opp<=74)}const c=api.evaluate(pair(),{...v,pool:{...v.pool,status:'UNKNOWN',reason:'x',stage:'program'}});api.S.candidates=[c];assert.equal(api.approvalReason(c),'Pool not verified');const ok=api.evaluate(pair(),v);api.S.candidates=[ok];routeOk(api);assert.equal(api.approvalReason(ok),'')});
 test('bonding curves stay unsupported even with a validated-looking pool',()=>{const {api}=harness();const curve={...pair(),dexId:'pumpfun'};const c=api.evaluate(curve,verified());assert.equal(c.marketSupported,false);assert.equal(c.ready,false);assert.equal(api.approvalReason(c),'Unsupported market')});
 test('old evidence blocks approval and carries its original timestamp',()=>{const {api}=harness();const t=Date.now()-600001;const c=api.evaluate(pair(),verified(20,{coreAt:t,holdersAt:t,pool:{...verified().pool,at:t}}));api.S.candidates=[c];assert.equal(c.checkedAt,t);assert.equal(api.approvalReason(c),'Safety evidence stale')});
 test('amount conversion keeps precision and rejects impossible values',()=>{assert.equal(Quotes.toBaseUnits(10,6),10000000n);assert.equal(Quotes.toBaseUnits(1234.5678,9),1234567800000n);assert.equal(Quotes.toBaseUnits(0,6),null);assert.equal(Quotes.toBaseUnits(5,-1),null);assert.equal(Quotes.toBaseUnits(NaN,6),null);assert.equal(Quotes.toBaseUnits(1e12,9),1000000000000000000000n)});
@@ -38,7 +38,7 @@ test('quote parsing fails closed on mismatched or missing data and separates no-
 test('quote client sends no wallet and no credentials, requests the exact amount, and ages quotes into STALE',async()=>{const urls=[];const gate=Data.createGate('api.jup.ag',async(url,opt)=>{urls.push([url,opt]);return {inAmount:'10000000',outAmount:'9800000'}},{wait:async()=>{}});const client=Quotes.createQuoteClient(gate);const q=await client.quoteSell({mint:A,amount:10000000n,sellUsd:10,markUsd:10});assert.equal(q.status,'ROUTE_AVAILABLE');const u=new URL(urls[0][0]);assert.equal(u.searchParams.get('amount'),'10000000');assert.equal(u.searchParams.get('inputMint'),A);assert.equal(u.searchParams.get('outputMint'),U);assert.equal(u.searchParams.get('slippageBps'),'100');assert.equal(u.searchParams.has('taker'),false);assert.deepEqual(Object.keys(urls[0][1].headers),['Accept']);assert.equal(Quotes.effective(q,q.quotedAt+30001).status,'STALE');assert.equal(Quotes.effective(q,q.quotedAt+1000).status,'ROUTE_AVAILABLE');
  const failing=Quotes.createQuoteClient(Data.createGate('x',async()=>{const e=Error('429');e.status=429;throw e},{wait:async()=>{}}));assert.equal((await failing.quoteSell({mint:A,amount:1n,sellUsd:1,markUsd:1})).status,'UNVERIFIED');
  const noRoute=Quotes.createQuoteClient(Data.createGate('x',async()=>{const e=Error('400');e.status=400;e.body={error:'No routes found'};throw e},{wait:async()=>{}}));assert.equal((await noRoute.quoteSell({mint:A,amount:1n,sellUsd:1,markUsd:1})).status,'NO_ROUTE')});
-test('a definitive no-route blocks approval; an unavailable quote provider does not, and is shown as not verified',async()=>{const {api,elements}=harness();const c=api.evaluate(pair(),verified());api.S.candidates=[c];const key=A+':'+api.S.size;api.quoteCache[key]={status:'UNVERIFIED',reason:'HTTP 429',quotedAt:Date.now()};assert.equal(api.approvalReason(c),'');assert.equal(api.fullEvidence(c).find(e=>e.id==='route').status,'UNKNOWN');api.quoteCache[key]={status:'NO_ROUTE',reason:'No routes found',quotedAt:Date.now()};assert.equal(api.approvalReason(c),'No sell route');api.drawReview(c);assert.match(elements.get('#review').innerHTML,/NO ROUTE FOUND/);
+test('approval fails closed: no-route, unavailable, pending, stale or missing sell quotes all block; only a fresh route approves',async()=>{const {api,elements}=harness();const c=api.evaluate(pair(),verified());api.S.candidates=[c];const key=A+':'+api.S.size;assert.equal(api.approvalReason(c),'Sell quote required');api.quoteCache[key]={status:'PENDING',quotedAt:Date.now()};assert.equal(api.approvalReason(c),'Sell quote required');api.quoteCache[key]={status:'UNVERIFIED',reason:'HTTP 429',quotedAt:Date.now()};assert.equal(api.approvalReason(c),'Sell quote unavailable');routeOk(api);api.quoteCache[key].quotedAt=Date.now()-31000;assert.equal(api.approvalReason(c),'Sell quote stale — refresh');assert.equal(api.fullEvidence(c).find(e=>e.id==='route').status,'UNKNOWN');api.quoteCache[key]={status:'NO_ROUTE',reason:'No routes found',quotedAt:Date.now()};assert.equal(api.approvalReason(c),'No sell route');api.drawReview(c);assert.match(elements.get('#review').innerHTML,/NO ROUTE FOUND/);
  api.setQuotes({quoteSell:async a=>({status:'ROUTE_AVAILABLE',reason:'',quotedAt:Date.now(),amountIn:a.amount.toString(),sellUsd:a.sellUsd,markUsd:a.markUsd,outUsd:9.5,minOutUsd:9.4,slippageBps:100,priceImpactPct:-1.2,feeBps:10,platformFeeBps:null,router:'metis',route:['Raydium'],shortfallPct:5})});delete api.quoteCache[key];await api.requestQuote(c,api.S.size);assert.equal(api.quoteFor(c,api.S.size).status,'ROUTE_AVAILABLE');assert.equal(api.approvalReason(c),'');api.drawReview(c);const html=elements.get('#review').innerHTML;for(const re of [/ROUTE AVAILABLE/,/Estimated output/,/Minimum output/,/1% slippage/,/Price impact/,/Fees/,/Raydium/,/not an executed swap/])assert.match(html,re)});
 test('quote requests need verified mint decimals and use the selected size',async()=>{const {api}=harness();let seen=null;api.setQuotes({quoteSell:async a=>{seen=a;return {status:'UNVERIFIED',reason:'x',quotedAt:Date.now()}}});const noDecimals=api.evaluate(pair(),null);await api.requestQuote(noDecimals,10);assert.equal(seen,null);const c=api.evaluate(pair(),verified());await api.requestQuote(c,20);assert.equal(seen.amount,20000000n);assert.equal(seen.sellUsd,20)});
 test('RPC errors are classified: 429 backs off exponentially, 403 waits longer, disabled methods wait longest',async()=>{let now=0,status=429;const rpc=Data.createRpc(async()=>{const e=Error(String(status));e.status=status;throw e},{endpoints:['https://a.example'],now:()=>now,wait:async()=>{}});await assert.rejects(rpc.request('getAccountInfo',['x']),/429/);const h=()=>rpc.health['https://a.example getAccountInfo'];assert.equal(h().retryAt,60000);now=60001;await assert.rejects(rpc.request('getAccountInfo',['y']),/429/);assert.equal(h().failures,2);assert.equal(h().retryAt,60001+120000);
@@ -49,4 +49,95 @@ test('recovery resets the failure count; Retry-After extends the cooldown',async
 test('stale cache is served only after every provider fails, flagged and with its original timestamp',async()=>{let now=1000,fail=false;const rpc=Data.createRpc(async()=>{if(fail)throw Error('503');return {result:{value:{n:1}}}},{endpoints:['https://a.example'],now:()=>now,wait:async()=>{}});await rpc.request('getAccountInfo',['m']);assert.equal((await rpc.detailed('getAccountInfo',['m'])).stale,false);now+=130000;fail=true;const r=await rpc.detailed('getAccountInfo',['m']);assert.equal(r.stale,true);assert.equal(r.fetchedAt,1000);assert.deepEqual(r.result.value,{n:1});now+=700000;await assert.rejects(rpc.request('getAccountInfo',['m']),/unavailable/)});
 test('HTTP gate caches, dedupes, paces, cools down and reports its own errors',async()=>{let now=0,calls=0,waits=[],fail=false;const gate=Data.createGate('api.dexscreener.com',async()=>{calls++;if(fail){const e=Error('429');e.status=429;throw e}return {n:calls}},{now:()=>now,wait:async ms=>waits.push(ms),gap:200});const a=gate.run('u',undefined,{ttl:5000}),b=gate.run('u',undefined,{ttl:5000});assert.equal(a,b);await a;assert.equal(calls,1);assert.equal((await gate.run('u',undefined,{ttl:5000})).cached,true);now=6000;fail=true;await assert.rejects(gate.run('u',undefined,{ttl:5000}),/api\.dexscreener\.com: HTTP 429 rate limited/);await assert.rejects(gate.run('v',undefined,{ttl:0}),/cooldown/);assert.equal(calls,2);now=70000;fail=false;assert.equal((await gate.run('u',undefined,{ttl:5000})).value.n,3);const lines=Data.describeHealth([gate.health],now);assert.match(lines[0],/api\.dexscreener\.com: OK/)});
 test('health text names provider, method, failure and retry time',async()=>{let now=0;const rpc=Data.createRpc(async()=>{const e=Error('429');e.status=429;throw e},{endpoints:['https://a.example'],now:()=>now,wait:async()=>{}});await assert.rejects(rpc.request('getTokenLargestAccounts',['x']));assert.match(Data.describeHealth([rpc.health],now)[0],/a\.example · getTokenLargestAccounts: HTTP 429 rate limited — retry in 60s/)});
-test('an approved position records its pool and decimals so exits can reject a different market',()=>{const {api}=harness();const c=api.evaluate(pair(),verified());api.S.candidates=[c];api.approve(c);const p=api.S.positions[0];assert.equal(p.pairAddress,POOL);assert.equal(p.decimals,6);assert.doesNotThrow(()=>api.decodeState(JSON.parse(JSON.stringify(api.backup()))));const b=api.backup();b.state.positions[0].decimals=99;assert.throws(()=>api.decodeState(b),/decimals/)});
+test('an approved position records its pool and decimals so exits can reject a different market',()=>{const {api}=harness();const c=api.evaluate(pair(),verified());api.S.candidates=[c];routeOk(api);api.approve(c);const p=api.S.positions[0];assert.equal(p.pairAddress,POOL);assert.equal(p.decimals,6);assert.doesNotThrow(()=>api.decodeState(JSON.parse(JSON.stringify(api.backup()))));const b=api.backup();b.state.positions[0].decimals=99;assert.throws(()=>api.decodeState(b),/decimals/)});
+
+// Devil's-advocate review fixes (v2.5).
+test('a no-route answer for one mint cools down only that mint; rate limits still pause the whole provider',async()=>{
+ let calls=0;const gate=Data.createGate('api.jup.ag',async url=>{calls++;if(url.includes(A)){const e=Error('400');e.status=400;e.body={error:'Could not find any route'};throw e}return {inputMint:B,outputMint:U,inAmount:'1000',outAmount:'9900000'}},{wait:async()=>{}});
+ const qc=Quotes.createQuoteClient(gate);
+ assert.equal((await qc.quoteSell({mint:A,amount:1000n,sellUsd:10,markUsd:10})).status,'NO_ROUTE');
+ assert.equal((await qc.quoteSell({mint:B,amount:1000n,sellUsd:10,markUsd:10})).status,'ROUTE_AVAILABLE','another mint is still quoted');
+ assert.equal((await qc.quoteSell({mint:A,amount:2000n,sellUsd:20,markUsd:20})).status,'NO_ROUTE','a repeat during that mint\'s cooldown keeps its no-route answer');
+ assert.equal(calls,2,'the repeat for the cooling mint sends no request');
+ const limited=Data.createGate('api.jup.ag',async()=>{const e=Error('429');e.status=429;throw e},{wait:async()=>{}}),lq=Quotes.createQuoteClient(limited);
+ await lq.quoteSell({mint:A,amount:1000n,sellUsd:10,markUsd:10});
+ const other=await lq.quoteSell({mint:B,amount:1000n,sellUsd:10,markUsd:10});
+ assert.equal(other.status,'UNVERIFIED');assert.match(other.reason,/cooldown/)});
+test('position monitoring uses its own DexScreener gate, so discovery cooldowns cannot pause exits',async()=>{
+ const {api}=harness();api.S.positions=[pos()];let gateUsed=null;api.setPairs(async(addrs,gate)=>{gateUsed=gate;return [pair()]});
+ await api.refreshPositions();
+ assert.ok(gateUsed,'refreshPositions passes a gate');assert.equal(gateUsed.name,'api.dexscreener.com positions');
+ assert.equal(api.S.positions[0].stale,false)});
+test('top-10 concentration below the 90% block is graded: penalised from 30%, never Ready above 70%, and flagged HIGH',()=>{
+ const {api,elements}=harness(),at=x=>api.evaluate(pair(),verified(x,{adjusted:x,excluded:['v']}));
+ const low=at(20),mid=at(60),high=at(89.9);
+ assert.equal(low.evidence.find(e=>e.id==='adjtop').flag,false);
+ assert.ok(mid.opp<low.opp,'60% scores below 20%');assert.equal(mid.evidence.find(e=>e.id==='adjtop').flag,true);assert.ok(mid.warn.some(w=>/score reduced by 23/.test(w)));
+ assert.equal(high.ready,false);assert.ok(high.opp<=74);assert.equal(high.hard,false,'still a soft block, not a hard failure');assert.ok(high.warn.some(w=>/cannot become Ready/.test(w)));
+ api.S.candidates=[high];routeOk(api);assert.equal(api.approvalReason(high),'Not Ready (78+ required)');
+ api.drawReview(mid);assert.match(elements.get('#review').innerHTML,/class="unknown">VERIFIED · HIGH/);
+ const raw=api.evaluate(pair(),verified(60));assert.equal(raw.warn.some(w=>/score reduced/.test(w)),false,'raw share includes pool vaults, so it is not graded')});
+test('route cost gates approval on API price impact plus fees, not on shortfall against a stale mark',()=>{
+ const {api,elements}=harness();const c=api.evaluate(pair(),verified());api.S.candidates=[c];const key=A+':'+api.S.size;
+ routeOk(api);Object.assign(api.quoteCache[key],{priceImpactPct:-0.3,feeBps:10,outUsd:7.92,shortfallPct:20.8});
+ assert.equal(api.approvalReason(c),'','a fair route after a 20% price move still approves');
+ Object.assign(api.quoteCache[key],{priceImpactPct:-9.5,feeBps:100});
+ assert.equal(api.approvalReason(c),'Sell route too costly');
+ const row=api.fullEvidence(c).find(e=>e.id==='route');assert.equal(row.status,'FAILED');assert.match(row.detail,/10\.50% \(limit 10%\)/);
+ api.drawReview(c);assert.match(elements.get('#review').innerHTML,/Route cost \(impact \+ fees\)<\/span><b>10\.50% \(limit 10%\)/);
+ Object.assign(api.quoteCache[key],{priceImpactPct:null,feeBps:10});
+ assert.equal(api.approvalReason(c),'Sell route cost not reported');
+ Object.assign(api.quoteCache[key],{priceImpactPct:2,feeBps:null});assert.equal(api.approvalReason(c),'','unreported fees count as zero when impact is reported')});
+test('an open review re-quotes automatically only while the setup can be approved',async()=>{
+ const run=async v=>{const {api}=harness();let n=0;api.setQuotes({quoteSell:async a=>{n++;return {status:'ROUTE_AVAILABLE',reason:'',quotedAt:Date.now(),amountIn:'1',sellUsd:10,markUsd:10,outUsd:9.9,minOutUsd:9.8,slippageBps:100,priceImpactPct:0,feeBps:null,platformFeeBps:null,router:null,route:[],shortfallPct:1}}});
+  const c=api.evaluate(pair(),v);api.S.candidates=[c];api.openReview(c.address);
+  for(let i=0;i<3;i++){await new Promise(r=>setImmediate(r));api.quoteCache[A+':'+api.S.size].quotedAt-=31000;api.drawReview(c)}
+  await new Promise(r=>setImmediate(r));return n};
+ assert.equal(await run(verified(20,{mint:'GAhY6goNLmaQwDfYRMBLtbfSacSTdp3kyixmjLZXRq1q'})),1,'a hard-failed token is quoted once when opened, then left alone');
+ assert.equal(await run(verified()),4,'a Ready setup keeps its quote fresh')});
+test('the concentration Ready block does not depend on the Opportunity cap',()=>{
+ const {api}=harness(null,s=>s.replace('READY=78,','READY=70,'));
+ const capped=api.evaluate(pair(),verified(85,{adjusted:85,excluded:['v']})),clean=api.evaluate(pair(),verified(20,{adjusted:20,excluded:['v']}));
+ assert.ok(capped.opp>=70,'with READY lowered, the 74 cap alone would no longer block');assert.equal(capped.ready,false);assert.equal(clean.ready,true)});
+
+// Second follow-up: remaining review findings.
+const T22=require('../token2022.js');
+const tick=()=>new Promise(r=>setImmediate(r));
+function quote(over={}){return {status:'ROUTE_AVAILABLE',reason:'',quotedAt:Date.now(),amountIn:'1',sellUsd:10,markUsd:10,outUsd:9.9,minOutUsd:9.8,slippageBps:100,priceImpactPct:0.5,feeBps:10,platformFeeBps:null,router:null,route:[],shortfallPct:1,...over}}
+test('a flagged HIGH concentration row is counted as high, not verified',()=>{const {api}=harness();const c=api.evaluate(pair(),verified(80,{adjusted:80,excluded:['v']}));const [a,b]=api.evidenceLabel(c);assert.match(a,/^\d+ verified$/);assert.match(b,/ · 1 high · /);
+ const clean=api.evaluate(pair(),verified(20,{adjusted:20,excluded:['v']}));assert.equal(+api.evidenceLabel(clean)[0].split(' ')[0],+a.split(' ')[0]+1);assert.doesNotMatch(api.evidenceLabel(clean)[1],/high/)});
+test('an open review redraws when its quote expires, and Approve on an expired quote fetches a new one',async()=>{
+ const h=harness(),api=h.api,timers=[];h.ctx.setTimeout=(fn,ms)=>{timers.push({fn,ms});return timers.length};let n=0;api.setQuotes({quoteSell:async()=>{n++;return quote()}});
+ const c=api.evaluate(pair(),verified());api.S.candidates=[c];api.openReview(c.address);await tick();assert.equal(n,1);
+ const key=A+':'+api.S.size;api.quoteCache[key].quotedAt=Date.now()-10000;timers.length=0;api.drawReview(c);
+ const t=timers.at(-1);assert.ok(t&&t.ms>=19000&&t.ms<=20100,'redraw scheduled at expiry: '+(t&&t.ms));
+ api.quoteCache[key].quotedAt=Date.now()-31000;t.fn();await tick();assert.equal(n,2,'expiry redraw re-quotes a Ready review');
+ api.quoteCache[key].quotedAt=Date.now()-31000;api.approve(c);assert.equal(api.S.positions.length,0);await tick();assert.equal(n,3,'Approve on a stale quote fetches a new one');
+ assert.equal(api.approvalReason(c),'');api.approve(c);assert.equal(api.S.positions.length,1)});
+test('graded concentration warns when other pools for the token are counted as holders',()=>{const {api}=harness();
+ const main={...pair(),liquidity:{usd:200000}},side={...pair(),pairAddress:'5xot9PVkphiX2adznghwrAuxGs2zeWisNSxMW6hU6Hkj',liquidity:{usd:50000}};
+ const [chosen]=api.choose([side,main,{...main}]);assert.equal(chosen.pairAddress,POOL);assert.equal(chosen._supportedPools,2,'duplicate rows of one pool count once');
+ const c=api.evaluate(chosen,verified(60,{adjusted:60,excluded:['v']}));assert.ok(c.warn.some(w=>/1 other pool\(s\) for this token are not excluded/.test(w)));
+ const [only]=api.choose([{...pair()}]);assert.equal(only._supportedPools,1);assert.ok(!api.evaluate(only,verified(60,{adjusted:60,excluded:['v']})).warn.some(w=>/other pool/.test(w)))});
+test('server errors on three different mints pause the whole quote provider; per-mint lines are short and vanish after cooldown',async()=>{
+ let t=1e12,calls=0;const gate=Data.createGate('api.jup.ag',async()=>{calls++;const e=Error('503');e.status=503;throw e},{wait:async()=>{},now:()=>t});
+ const mints=[A,B,U,'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'];
+ for(const m of mints.slice(0,3))await gate.run('https://api.jup.ag/x?'+m,{},{healthKey:m}).catch(()=>{});
+ assert.equal(calls,3);await gate.run('https://api.jup.ag/x?'+mints[3],{},{healthKey:mints[3]}).catch(()=>{});assert.equal(calls,3,'fourth mint sends no request');
+ let lines=Data.describeHealth([gate.health],t);assert.ok(lines.some(l=>/^api\.jup\.ag: HTTP 503/.test(l)));assert.ok(lines.some(l=>l.includes('api.jup.ag · So11…1112: HTTP 503')),lines.join('\n'));assert.ok(!lines.some(l=>l.includes(A)),'full address not shown');
+ t+=61000;lines=Data.describeHealth([gate.health],t);assert.ok(!lines.some(l=>l.includes(' · ')),'expired per-mint lines are hidden')});
+test('a scan reuses fresh verification for the same pool and keeps searched tokens listed',async()=>{
+ const {api}=harness();let verifies=0,asked=[],market={[A]:pair(A),[B]:{...pair(B),baseToken:{address:B,symbol:'SECOND',name:'Second'}}};
+ api.setVerify(async()=>{verifies++;return verified()});api.setPairs(async addrs=>{asked=addrs.slice();return addrs.filter(a=>market[a]).map(a=>({...market[a]}))});
+ api.setDiscover(async()=>[A]);
+ await api.refresh(true);assert.equal(verifies,1);assert.equal(api.S.candidates[0].verified,true);
+ await api.refresh(true);assert.equal(verifies,1,'fresh verification is reused, not repeated');assert.equal(api.S.candidates.find(c=>c.address===A).verified,true,'not reset to unverified');
+ market[A]={...market[A],pairAddress:'5xot9PVkphiX2adznghwrAuxGs2zeWisNSxMW6hU6Hkj'};await api.refresh(true);assert.equal(verifies,2,'a different pool is verified again');
+ api.search(B);for(let i=0;i<20&&!api.S.candidates.some(c=>c.address===B);i++)await tick();assert.ok(api.S.candidates.some(c=>c.address===B),'search added B');
+ await api.refresh(true);assert.ok(asked.includes(B),'pinned search result is fetched with discovery');assert.ok(api.S.candidates.some(c=>c.address===B),'search result survives the next scan')});
+test('Token-2022 and pool program lookups ignore inherited object keys',async()=>{
+ for(const name of ['constructor','toString','__proto__','hasOwnProperty'])assert.equal(T22.review([{extension:name}],null).status,'BLOCKED',name);
+ const r=await Pools.verifyPool(async()=>({value:{owner:'constructor',data:['','base64']}}),pair(),va);assert.equal(r.status,'FAILED')});
+test('Retry-After is honoured in both seconds and HTTP-date form',async()=>{
+ const h=harness();const run=async v=>{h.ctx.fetch=async()=>({ok:false,status:429,headers:{get:()=>v},json:async()=>({})});try{await h.api.get('https://api.dexscreener.com/x')}catch(e){return e.retryAfter}};
+ assert.equal(await run('30'),30000);const ms=await run(new Date(Date.now()+120000).toUTCString());assert.ok(ms>=118000&&ms<=121000,String(ms));assert.equal(await run('garbage'),undefined)});

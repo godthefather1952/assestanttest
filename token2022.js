@@ -14,6 +14,8 @@ var ALWAYS_BLOCKED={
   interestBearingConfig:'Displayed balances follow an authority-controlled rate.'
 };
 function unset(v){return v===null||v===undefined||v===''||v===SYSTEM}
+// Own keys only: a plain-object lookup would also match inherited names such as "constructor" or "toString" and pass them.
+function has(map,key){return Object.prototype.hasOwnProperty.call(map,key)}
 function short(k){k=String(k||'');return k.length>10?k.slice(0,4)+'…'+k.slice(-4):k}
 function feeBps(f){return f&&typeof f==='object'&&Number.isFinite(Number(f.transferFeeBasisPoints))?Number(f.transferFeeBasisPoints):null}
 // extensions: the parsed list from getAccountInfo (jsonParsed) for a Token-2022 mint. freezeAuthority: the mint's freeze authority.
@@ -24,8 +26,8 @@ function review(extensions,freezeAuthority){
     var name=e&&typeof e.extension==='string'?e.extension:null,s=e&&e.state&&typeof e.state==='object'?e.state:{};
     function block(reason){blocked.push({extension:name||'unknown',reason:reason})}
     if(!name)return block('Extension entry could not be read.');
-    if(ALLOWED[name])return allowed.push(name);
-    if(ALWAYS_BLOCKED[name])return block(ALWAYS_BLOCKED[name]);
+    if(has(ALLOWED,name))return allowed.push(name);
+    if(has(ALWAYS_BLOCKED,name))return block(ALWAYS_BLOCKED[name]);
     if(name==='permanentDelegate')return unset(s.delegate)?allowed.push(name+' (unset)'):block('Permanent delegate '+short(s.delegate)+' can move or burn any holder\'s tokens.');
     if(name==='transferHook')return unset(s.programId)&&unset(s.authority)?allowed.push(name+' (unset)'):block('A transfer hook program'+(unset(s.programId)?' can be set later by '+short(s.authority):' '+short(s.programId)+' runs on every transfer')+'.');
     if(name==='transferFeeConfig'){

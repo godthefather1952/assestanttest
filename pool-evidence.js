@@ -18,6 +18,8 @@ var UNADAPTED={
   'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB':'Meteora Dynamic AMM',
   '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P':'Pump.fun bonding curve'
 };
+// Own keys only, so an inherited name such as "constructor" never matches a program table.
+function own(map,key){return Object.prototype.hasOwnProperty.call(map,key)?map[key]:undefined}
 function base58(bytes){
   var n=0n,i;for(i=0;i<bytes.length;i++)n=(n<<8n)|BigInt(bytes[i]);
   var out='';while(n>0n){out=ALPHABET[Number(n%58n)]+out;n/=58n}
@@ -32,7 +34,7 @@ function decodeBase64(text){
 function keyAt(bytes,offset){return offset+32<=bytes.length?base58(bytes.subarray(offset,offset+32)):null}
 // Decodes a pool account into its mints and vault addresses; returns null when the program or account is not a trusted layout.
 function decodePool(owner,bytes){
-  var layout=PROGRAMS[owner];if(!layout||!bytes)return null;
+  var layout=own(PROGRAMS,owner);if(!layout||!bytes)return null;
   var pool={program:owner,name:layout.name,dex:layout.dex,mintA:keyAt(bytes,layout.mintA),mintB:keyAt(bytes,layout.mintB),vaultA:keyAt(bytes,layout.vaultA),vaultB:keyAt(bytes,layout.vaultB)};
   return pool.mintA&&pool.mintB&&pool.vaultA&&pool.vaultB?pool:null;
 }
@@ -50,8 +52,8 @@ async function verifyPool(request,pair,validAddress){
   try{account=(await request('getAccountInfo',[address,{encoding:'base64',commitment:'finalized'}])).value}catch(e){return result('UNKNOWN','Pool account unavailable: '+String(e&&e.message||e).slice(0,200),{stage:'program'})}
   if(!account)return result('FAILED','Pool account does not exist on-chain.',{pool:address,stage:'program'});
   var owner=account.owner;
-  if(UNADAPTED[owner])return result('UNSUPPORTED',UNADAPTED[owner]+' is recognised but has no validated adapter.',{pool:address,program:owner,programName:UNADAPTED[owner],stage:'program'});
-  var layout=PROGRAMS[owner];
+  if(own(UNADAPTED,owner))return result('UNSUPPORTED',own(UNADAPTED,owner)+' is recognised but has no validated adapter.',{pool:address,program:owner,programName:own(UNADAPTED,owner),stage:'program'});
+  var layout=own(PROGRAMS,owner);
   if(!layout)return result('FAILED','Pool account is owned by unrecognised program '+String(owner).slice(0,44)+'.',{pool:address,program:owner,stage:'program'});
   if(layout.dex!==dex)return result('FAILED','Pool program is '+layout.name+' but the market reports '+dex+'.',{pool:address,program:owner,programName:layout.name,stage:'program'});
   var bytes;try{bytes=decodeBase64(String(account.data&&account.data[0]||''))}catch(e){return result('FAILED','Pool account data could not be decoded.',{pool:address,program:owner,programName:layout.name,stage:'program'})}

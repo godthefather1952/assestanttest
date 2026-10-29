@@ -49,7 +49,7 @@ test('late verification cannot replace a different open review',async t=>{
  let release;const gate=new Promise(r=>release=r);t.after(()=>release());
  const {page}=await setup(t,{market:[pair(),pair(B,'SECOND')],rpc:async(route,q)=>{if(q.params[0]===A)await gate;return route.fulfill({json:rpcResponse(q)})}});
  await review(page,A);await page.locator('#close').click();await page.locator('#candidates [data-review="'+B+'"]').click();assert.match(await page.locator('#review h2').innerText(),/SECOND/);assert.equal(await page.locator('#approveBtn').isEnabled(),false);
- release();await page.waitForFunction(()=>document.querySelector('#ready').textContent==='2');assert.match(await page.locator('#review h2').innerText(),/SECOND/);assert.equal(await page.locator('#approveBtn').isEnabled(),true);assert.equal((await stored(page)).positions.length,0);
+ release();await page.waitForFunction(()=>document.querySelector('#ready').textContent==='2');await page.waitForFunction(()=>/ROUTE AVAILABLE/.test(document.querySelector('#review').innerText));assert.match(await page.locator('#review h2').innerText(),/SECOND/);assert.equal(await page.locator('#approveBtn').isEnabled(),true);assert.equal((await stored(page)).positions.length,0);
 });
 test('unknown position liquidity keeps fresh-price stops armed; confirmed zero liquidity exits',async t=>{
  const {page,setMarket}=await setup(t);await page.waitForFunction(()=>document.querySelector('#ready').textContent==='1');await review(page);await page.locator('#approveBtn').click();assert.equal((await stored(page)).positions.length,1);
@@ -90,8 +90,8 @@ test('pool evidence failures block Ready: unknown pool address and a vault holdi
    await page.waitForFunction(()=>!/Pool verification has not run/.test(document.querySelector('#review').innerText));
    const text=await page.locator('#review').innerText();assert.match(text,re);assert.equal(await page.locator('#approveBtn').isEnabled(),false);assert.equal((await stored(page)).positions.length,0)})}
 });
-test('a definitive no-route quote blocks approval while an unreachable quote provider does not',async t=>{
- for(const [name,quote,enabled,re] of [['no route',route=>route.fulfill({status:400,json:{error:'Could not find any route'}}),false,/NO ROUTE FOUND/],['provider down',route=>route.fulfill({status:429,json:{error:'rate'}}),true,/NOT VERIFIED/]]){
+test('approval fails closed: a definitive no-route and an unreachable quote provider both block approval',async t=>{
+ for(const [name,quote,enabled,re] of [['no route',route=>route.fulfill({status:400,json:{error:'Could not find any route'}}),false,/NO ROUTE FOUND/],['provider down',route=>route.fulfill({status:429,json:{error:'rate'}}),false,/NOT VERIFIED/]]){
   await t.test(name,async t=>{const {page}=await setup(t,{quote});await page.waitForFunction(()=>document.querySelector('#ready').textContent==='1');await review(page);await page.waitForFunction(()=>/NO ROUTE FOUND|NOT VERIFIED/.test(document.querySelector('#review').innerText));assert.match(await page.locator('#review').innerText(),re);assert.equal(await page.locator('#approveBtn').isEnabled(),enabled);assert.equal((await stored(page)).positions.length,0)})}
 });
 test('quotes follow the selected size and a tracked position can be quoted for its remaining amount',async t=>{
@@ -107,5 +107,22 @@ test('Token-2022: benign extensions can be Ready; a permanent delegate, a transf
  const cases=[['benign',{mintOwner:T22,extensions:meta},true,/Token-2022 extensions[\s\S]*?Only benign or inert extensions: metadataPointer, tokenMetadata[\s\S]*?VERIFIED/],['permanent delegate',{mintOwner:T22,extensions:[...meta,{extension:'permanentDelegate',state:{delegate:K}}]},false,/Token-2022 extensions[\s\S]*?Permanent delegate[\s\S]*?FAILED/],['transfer fee',{mintOwner:T22,extensions:[...meta,{extension:'transferFeeConfig',state:{olderTransferFee:{transferFeeBasisPoints:100},newerTransferFee:{transferFeeBasisPoints:100},transferFeeConfigAuthority:null}}]},false,/1% fee[\s\S]*?FAILED/],['no extension list',{mintOwner:T22},false,/Token-2022 extensions[\s\S]*?UNKNOWN/]];
  for(const [name,chain,enabled,re] of cases){
   await t.test(name,async t=>{const {page}=await setup(t,{chain});await page.waitForFunction(()=>Number(document.querySelector('#scanned').textContent)>0);await review(page);await page.waitForFunction(()=>!/Validating/.test(document.querySelector('#review').innerText)&&/Token-2022 extensions|Safety status/.test(document.querySelector('#review').innerText)&&!/Pool verification has not run/.test(document.querySelector('#review').innerText));
-   const text=await page.locator('#review').innerText();assert.match(text,re);assert.equal(await page.locator('#approveBtn').isEnabled(),enabled);assert.equal((await stored(page)).positions.length,0)})}
+   if(enabled)await page.waitForFunction(()=>/ROUTE AVAILABLE/.test(document.querySelector('#review').innerText));const text=await page.locator('#review').innerText();assert.match(text,re);assert.equal(await page.locator('#approveBtn').isEnabled(),enabled);assert.equal((await stored(page)).positions.length,0)})}
+});
+test('a discovery rate limit does not pause position monitoring (separate DexScreener gates)',async t=>{
+ const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});t.after(()=>context.close());const page=await context.newPage();
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));t.after(()=>assert.deepEqual(errors,[]));
+ const now=Date.now(),d=new Date(),day=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+ const seeded={app:'NIGHTSHIFT',version:2,state:{positions:[{address:A,pairAddress:POOL,decimals:6,symbol:'FIRST',name:'FIRST',amount:10,entry:1,current:1,opened:now,dayBasis:1,setup:'MOMENTUM',entryLiquidity:200000,remainingPct:1,realizedPnl:0,dayRealized:0,peak:1,stopPct:-12,t1Hit:false,t2Hit:false,trailActive:false,lastPriceAt:now,stale:false}],history:[],evaluations:{},snapshots:{},dismissed:{},daily:{date:day,realized:0},last:0}};
+ await page.addInitScript(v=>{if(!sessionStorage.getItem('seeded')){localStorage.setItem('nightshift_v1',v);sessionStorage.setItem('seeded','1')}},JSON.stringify(seeded));
+ // Discovery's boost feed is rate limited from the start; the token-price endpoint used for positions stays healthy.
+ await page.route('https://api.dexscreener.com/**',route=>{const u=route.request().url();if(u.includes('/token-boosts/'))return route.fulfill({status:429,json:{error:'rate limited'}});return route.fulfill({json:u.includes('/tokens/')?[pair()]:[{chainId:'solana',tokenAddress:A}]})});
+ await page.route(/https:\/\/(solana-rpc\.publicnode\.com|solana\.api\.onfinality\.io|api\.mainnet\.solana\.com)\//,route=>route.fulfill({json:rpcResponse(route.request().postDataJSON())}));
+ await page.route('https://api.jup.ag/**',route=>route.fulfill({json:jupiter(route.request().url())}));
+ await page.goto(origin);
+ await page.waitForFunction(()=>/api\.dexscreener\.com: HTTP 429/.test(document.querySelector('#dataHealth').textContent),null,{timeout:20000});
+ const t0=Date.now();
+ // Let the 4-second position price cache lapse, then trigger a monitor pass (as returning to the tab does) instead of waiting for the 15-second timer.
+ await page.waitForTimeout(4100);await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+ await page.waitForFunction(at=>{const s=JSON.parse(localStorage.getItem('nightshift_v1')).state;return s.positions[0].lastPriceAt>at&&!s.positions[0].stale},t0,{timeout:30000});
 });

@@ -5,12 +5,13 @@ const A = 'So11111111111111111111111111111111111111112';
 const B = '11111111111111111111111111111111';
 const C = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
 const POOL = 'Ak7hDCxDSocD2ZgJBCa1ZwLcuDQz5F6n747a7rQtpXE3';
-function harness(raw=null) {
+// patch(source) lets a test change a constant (e.g. READY) to check that a guard does not rely on another constant.
+function harness(raw=null,patch=s=>s) {
  const elements = new Map(); let stored=raw, fail=false;
  const document = {hidden:false, querySelector(s){if(!elements.has(s))elements.set(s,{textContent:'',innerHTML:'',dataset:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},querySelectorAll(){return []}});return elements.get(s)},querySelectorAll(){return []}};
  const ctx = vm.createContext({NightshiftData:require('../scanner-data.js'),NightshiftPools:require('../pool-evidence.js'),NightshiftToken2022:require('../token2022.js'),NightshiftQuotes:require('../sell-quote.js'),document,localStorage:{getItem(){return stored},setItem(k,v){if(fail)throw Error('quota');stored=v}},Date,URL,console,setTimeout(){return 1},clearTimeout(){},AbortController,scrollTo(){},fetch(){throw Error('Unexpected network')}});
  const cut = source.indexOf("$('#refresh').onclick=");
- vm.runInContext(source.slice(0,cut)+`globalThis.api={get S(){return S},set S(v){S=v},validAddress,choose,verify,evaluate,approve,drawReview,openReview,approvalReason,backup,decodeState,save,restoreBackup,monitorPositions,refreshPositions,evidenceLabel,fullEvidence,quoteFor,requestQuote,evaluateExit,setQuotes(f){quoteClient=f},quoteCache,safeImage,avatar,stalePositions,positionDayPnl,partialExit, setRpc(f){rpc=f},setPairs(f){pairs=f},setBusy(v){busy=v},get storageBlocked(){return storageBlocked},get activeReview(){return activeReview}};})();`,ctx);
+ vm.runInContext(patch(source.slice(0,cut))+`globalThis.api={get S(){return S},set S(v){S=v},validAddress,choose,verify,evaluate,approve,drawReview,openReview,approvalReason,backup,decodeState,save,restoreBackup,monitorPositions,refreshPositions,evidenceLabel,fullEvidence,quoteFor,requestQuote,evaluateExit,setQuotes(f){quoteClient=f},quoteCache,safeImage,avatar,stalePositions,positionDayPnl,partialExit, setRpc(f){rpc=f},setPairs(f){pairs=f},setDiscover(f){discover=f},setVerify(f){verify=f},refresh,search,get,setBusy(v){busy=v},get storageBlocked(){return storageBlocked},get activeReview(){return activeReview}};})();`,ctx);
  return {api:ctx.api,ctx,elements,stored:()=>stored,fail(v){fail=v}};
 }
 function pair(a=A){return {chainId:'solana',dexId:'raydium',pairAddress:POOL,baseToken:{address:a,symbol:'TEST',name:'Test'},quoteToken:{address:C,symbol:'USDC',name:'USD Coin'},priceUsd:'1',liquidity:{usd:200000},volume:{m5:10000,h1:20000},txns:{m5:{buys:95,sells:5}},priceChange:{m5:10},pairCreatedAt:Date.now()-600000};}
@@ -21,4 +22,6 @@ const CPMM='CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',VAULT_A='Fo1Wt8bQhH5fz
 function key(a){let n=0n;for(const ch of a)n=n*58n+BigInt('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'.indexOf(ch));const out=[];while(n>0n){out.unshift(Number(n&255n));n>>=8n}while(out.length<32)out.unshift(0);return out}
 function poolAccount(mint0=A,mint1=C,v0=VAULT_A,v1=VAULT_B){const b=new Uint8Array(637);[[168,mint0],[200,mint1],[72,v0],[104,v1]].forEach(([o,k])=>b.set(key(k),o));return {owner:CPMM,data:[Buffer.from(b).toString('base64'),'base64']}}
 function vaultAccount(mint,amount='1000',owner=C){return {owner:C,data:{parsed:{type:'account',info:{mint,state:'initialized',owner:'AuthAuthAuthAuthAuthAuthAuthAuthAuthAuthAuth1',tokenAmount:{amount}}}}}}
-module.exports={harness,pair,verified,pos,rpcData,A,B,C,POOL,CPMM,VAULT_A,VAULT_B,key,poolAccount,vaultAccount};
+// Approval needs a fresh successful sell quote for the selected size; tests that expect approval set one explicitly.
+function routeOk(api,a=A,size){api.quoteCache[a+':'+(size||api.S.size)]={status:'ROUTE_AVAILABLE',reason:'',quotedAt:Date.now(),amountIn:'1',sellUsd:10,markUsd:10,outUsd:9.9,minOutUsd:9.8,slippageBps:100,priceImpactPct:0,feeBps:null,platformFeeBps:null,router:null,route:[],shortfallPct:1}}
+module.exports={harness,pair,verified,pos,rpcData,routeOk,A,B,C,POOL,CPMM,VAULT_A,VAULT_B,key,poolAccount,vaultAccount};

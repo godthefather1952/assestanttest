@@ -5,12 +5,13 @@ const A = 'So11111111111111111111111111111111111111112';
 const B = '11111111111111111111111111111111';
 const C = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
 const POOL = 'Ak7hDCxDSocD2ZgJBCa1ZwLcuDQz5F6n747a7rQtpXE3';
-function harness(raw=null) {
+// patch(source) lets a test change a constant (e.g. READY) to check that a guard does not rely on another constant.
+function harness(raw=null,patch=s=>s) {
  const elements = new Map(); let stored=raw, fail=false;
  const document = {hidden:false, querySelector(s){if(!elements.has(s))elements.set(s,{textContent:'',innerHTML:'',dataset:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},querySelectorAll(){return []}});return elements.get(s)},querySelectorAll(){return []}};
  const ctx = vm.createContext({NightshiftData:require('../scanner-data.js'),NightshiftPools:require('../pool-evidence.js'),NightshiftToken2022:require('../token2022.js'),NightshiftQuotes:require('../sell-quote.js'),document,localStorage:{getItem(){return stored},setItem(k,v){if(fail)throw Error('quota');stored=v}},Date,URL,console,setTimeout(){return 1},clearTimeout(){},AbortController,scrollTo(){},fetch(){throw Error('Unexpected network')}});
  const cut = source.indexOf("$('#refresh').onclick=");
- vm.runInContext(source.slice(0,cut)+`globalThis.api={get S(){return S},set S(v){S=v},validAddress,choose,verify,evaluate,approve,drawReview,openReview,approvalReason,backup,decodeState,save,restoreBackup,monitorPositions,refreshPositions,evidenceLabel,fullEvidence,quoteFor,requestQuote,evaluateExit,setQuotes(f){quoteClient=f},quoteCache,safeImage,avatar,stalePositions,positionDayPnl,partialExit, setRpc(f){rpc=f},setPairs(f){pairs=f},setBusy(v){busy=v},get storageBlocked(){return storageBlocked},get activeReview(){return activeReview}};})();`,ctx);
+ vm.runInContext(patch(source.slice(0,cut))+`globalThis.api={get S(){return S},set S(v){S=v},validAddress,choose,verify,evaluate,approve,drawReview,openReview,approvalReason,backup,decodeState,save,restoreBackup,monitorPositions,refreshPositions,evidenceLabel,fullEvidence,quoteFor,requestQuote,evaluateExit,setQuotes(f){quoteClient=f},quoteCache,safeImage,avatar,stalePositions,positionDayPnl,partialExit, setRpc(f){rpc=f},setPairs(f){pairs=f},setBusy(v){busy=v},get storageBlocked(){return storageBlocked},get activeReview(){return activeReview}};})();`,ctx);
  return {api:ctx.api,ctx,elements,stored:()=>stored,fail(v){fail=v}};
 }
 function pair(a=A){return {chainId:'solana',dexId:'raydium',pairAddress:POOL,baseToken:{address:a,symbol:'TEST',name:'Test'},quoteToken:{address:C,symbol:'USDC',name:'USD Coin'},priceUsd:'1',liquidity:{usd:200000},volume:{m5:10000,h1:20000},txns:{m5:{buys:95,sells:5}},priceChange:{m5:10},pairCreatedAt:Date.now()-600000};}

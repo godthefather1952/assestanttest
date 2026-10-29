@@ -77,3 +77,25 @@ test('top-10 concentration below the 90% block is graded: penalised from 30%, ne
  api.S.candidates=[high];routeOk(api);assert.equal(api.approvalReason(high),'Not Ready (78+ required)');
  api.drawReview(mid);assert.match(elements.get('#review').innerHTML,/class="unknown">VERIFIED · HIGH/);
  const raw=api.evaluate(pair(),verified(60));assert.equal(raw.warn.some(w=>/score reduced/.test(w)),false,'raw share includes pool vaults, so it is not graded')});
+test('route cost gates approval on API price impact plus fees, not on shortfall against a stale mark',()=>{
+ const {api,elements}=harness();const c=api.evaluate(pair(),verified());api.S.candidates=[c];const key=A+':'+api.S.size;
+ routeOk(api);Object.assign(api.quoteCache[key],{priceImpactPct:-0.3,feeBps:10,outUsd:7.92,shortfallPct:20.8});
+ assert.equal(api.approvalReason(c),'','a fair route after a 20% price move still approves');
+ Object.assign(api.quoteCache[key],{priceImpactPct:-9.5,feeBps:100});
+ assert.equal(api.approvalReason(c),'Sell route too costly');
+ const row=api.fullEvidence(c).find(e=>e.id==='route');assert.equal(row.status,'FAILED');assert.match(row.detail,/10\.50% \(limit 10%\)/);
+ api.drawReview(c);assert.match(elements.get('#review').innerHTML,/Route cost \(impact \+ fees\)<\/span><b>10\.50% \(limit 10%\)/);
+ Object.assign(api.quoteCache[key],{priceImpactPct:null,feeBps:10});
+ assert.equal(api.approvalReason(c),'Sell route cost not reported');
+ Object.assign(api.quoteCache[key],{priceImpactPct:2,feeBps:null});assert.equal(api.approvalReason(c),'','unreported fees count as zero when impact is reported')});
+test('an open review re-quotes automatically only while the setup can be approved',async()=>{
+ const run=async v=>{const {api}=harness();let n=0;api.setQuotes({quoteSell:async a=>{n++;return {status:'ROUTE_AVAILABLE',reason:'',quotedAt:Date.now(),amountIn:'1',sellUsd:10,markUsd:10,outUsd:9.9,minOutUsd:9.8,slippageBps:100,priceImpactPct:0,feeBps:null,platformFeeBps:null,router:null,route:[],shortfallPct:1}}});
+  const c=api.evaluate(pair(),v);api.S.candidates=[c];api.openReview(c.address);
+  for(let i=0;i<3;i++){await new Promise(r=>setImmediate(r));api.quoteCache[A+':'+api.S.size].quotedAt-=31000;api.drawReview(c)}
+  await new Promise(r=>setImmediate(r));return n};
+ assert.equal(await run(verified(20,{mint:'GAhY6goNLmaQwDfYRMBLtbfSacSTdp3kyixmjLZXRq1q'})),1,'a hard-failed token is quoted once when opened, then left alone');
+ assert.equal(await run(verified()),4,'a Ready setup keeps its quote fresh')});
+test('the concentration Ready block does not depend on the Opportunity cap',()=>{
+ const {api}=harness(null,s=>s.replace('READY=78,','READY=70,'));
+ const capped=api.evaluate(pair(),verified(85,{adjusted:85,excluded:['v']})),clean=api.evaluate(pair(),verified(20,{adjusted:20,excluded:['v']}));
+ assert.ok(capped.opp>=70,'with READY lowered, the 74 cap alone would no longer block');assert.equal(capped.ready,false);assert.equal(clean.ready,true)});

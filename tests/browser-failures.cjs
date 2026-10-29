@@ -122,6 +122,7 @@ test('a discovery rate limit does not pause position monitoring (separate DexScr
  await page.goto(origin);
  await page.waitForFunction(()=>/api\.dexscreener\.com: HTTP 429/.test(document.querySelector('#dataHealth').textContent),null,{timeout:20000});
  const t0=Date.now();
- // The next 15-second monitor tick must still refresh the position even though discovery is cooling down.
+ // Let the 4-second position price cache lapse, then trigger a monitor pass (as returning to the tab does) instead of waiting for the 15-second timer.
+ await page.waitForTimeout(4100);await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
  await page.waitForFunction(at=>{const s=JSON.parse(localStorage.getItem('nightshift_v1')).state;return s.positions[0].lastPriceAt>at&&!s.positions[0].stale},t0,{timeout:30000});
 });

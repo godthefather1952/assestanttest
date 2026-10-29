@@ -99,3 +99,45 @@ test('the concentration Ready block does not depend on the Opportunity cap',()=>
  const {api}=harness(null,s=>s.replace('READY=78,','READY=70,'));
  const capped=api.evaluate(pair(),verified(85,{adjusted:85,excluded:['v']})),clean=api.evaluate(pair(),verified(20,{adjusted:20,excluded:['v']}));
  assert.ok(capped.opp>=70,'with READY lowered, the 74 cap alone would no longer block');assert.equal(capped.ready,false);assert.equal(clean.ready,true)});
+
+// Second follow-up: remaining review findings.
+const T22=require('../token2022.js');
+const tick=()=>new Promise(r=>setImmediate(r));
+function quote(over={}){return {status:'ROUTE_AVAILABLE',reason:'',quotedAt:Date.now(),amountIn:'1',sellUsd:10,markUsd:10,outUsd:9.9,minOutUsd:9.8,slippageBps:100,priceImpactPct:0.5,feeBps:10,platformFeeBps:null,router:null,route:[],shortfallPct:1,...over}}
+test('a flagged HIGH concentration row is counted as high, not verified',()=>{const {api}=harness();const c=api.evaluate(pair(),verified(80,{adjusted:80,excluded:['v']}));const [a,b]=api.evidenceLabel(c);assert.match(a,/^\d+ verified$/);assert.match(b,/ · 1 high · /);
+ const clean=api.evaluate(pair(),verified(20,{adjusted:20,excluded:['v']}));assert.equal(+api.evidenceLabel(clean)[0].split(' ')[0],+a.split(' ')[0]+1);assert.doesNotMatch(api.evidenceLabel(clean)[1],/high/)});
+test('an open review redraws when its quote expires, and Approve on an expired quote fetches a new one',async()=>{
+ const h=harness(),api=h.api,timers=[];h.ctx.setTimeout=(fn,ms)=>{timers.push({fn,ms});return timers.length};let n=0;api.setQuotes({quoteSell:async()=>{n++;return quote()}});
+ const c=api.evaluate(pair(),verified());api.S.candidates=[c];api.openReview(c.address);await tick();assert.equal(n,1);
+ const key=A+':'+api.S.size;api.quoteCache[key].quotedAt=Date.now()-10000;timers.length=0;api.drawReview(c);
+ const t=timers.at(-1);assert.ok(t&&t.ms>=19000&&t.ms<=20100,'redraw scheduled at expiry: '+(t&&t.ms));
+ api.quoteCache[key].quotedAt=Date.now()-31000;t.fn();await tick();assert.equal(n,2,'expiry redraw re-quotes a Ready review');
+ api.quoteCache[key].quotedAt=Date.now()-31000;api.approve(c);assert.equal(api.S.positions.length,0);await tick();assert.equal(n,3,'Approve on a stale quote fetches a new one');
+ assert.equal(api.approvalReason(c),'');api.approve(c);assert.equal(api.S.positions.length,1)});
+test('graded concentration warns when other pools for the token are counted as holders',()=>{const {api}=harness();
+ const main={...pair(),liquidity:{usd:200000}},side={...pair(),pairAddress:'5xot9PVkphiX2adznghwrAuxGs2zeWisNSxMW6hU6Hkj',liquidity:{usd:50000}};
+ const [chosen]=api.choose([side,main,{...main}]);assert.equal(chosen.pairAddress,POOL);assert.equal(chosen._supportedPools,2,'duplicate rows of one pool count once');
+ const c=api.evaluate(chosen,verified(60,{adjusted:60,excluded:['v']}));assert.ok(c.warn.some(w=>/1 other pool\(s\) for this token are not excluded/.test(w)));
+ const [only]=api.choose([{...pair()}]);assert.equal(only._supportedPools,1);assert.ok(!api.evaluate(only,verified(60,{adjusted:60,excluded:['v']})).warn.some(w=>/other pool/.test(w)))});
+test('server errors on three different mints pause the whole quote provider; per-mint lines are short and vanish after cooldown',async()=>{
+ let t=1e12,calls=0;const gate=Data.createGate('api.jup.ag',async()=>{calls++;const e=Error('503');e.status=503;throw e},{wait:async()=>{},now:()=>t});
+ const mints=[A,B,U,'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'];
+ for(const m of mints.slice(0,3))await gate.run('https://api.jup.ag/x?'+m,{},{healthKey:m}).catch(()=>{});
+ assert.equal(calls,3);await gate.run('https://api.jup.ag/x?'+mints[3],{},{healthKey:mints[3]}).catch(()=>{});assert.equal(calls,3,'fourth mint sends no request');
+ let lines=Data.describeHealth([gate.health],t);assert.ok(lines.some(l=>/^api\.jup\.ag: HTTP 503/.test(l)));assert.ok(lines.some(l=>l.includes('api.jup.ag · So11…1112: HTTP 503')),lines.join('\n'));assert.ok(!lines.some(l=>l.includes(A)),'full address not shown');
+ t+=61000;lines=Data.describeHealth([gate.health],t);assert.ok(!lines.some(l=>l.includes(' · ')),'expired per-mint lines are hidden')});
+test('a scan reuses fresh verification for the same pool and keeps searched tokens listed',async()=>{
+ const {api}=harness();let verifies=0,asked=[],market={[A]:pair(A),[B]:{...pair(B),baseToken:{address:B,symbol:'SECOND',name:'Second'}}};
+ api.setVerify(async()=>{verifies++;return verified()});api.setPairs(async addrs=>{asked=addrs.slice();return addrs.filter(a=>market[a]).map(a=>({...market[a]}))});
+ api.setDiscover(async()=>[A]);
+ await api.refresh(true);assert.equal(verifies,1);assert.equal(api.S.candidates[0].verified,true);
+ await api.refresh(true);assert.equal(verifies,1,'fresh verification is reused, not repeated');assert.equal(api.S.candidates.find(c=>c.address===A).verified,true,'not reset to unverified');
+ market[A]={...market[A],pairAddress:'5xot9PVkphiX2adznghwrAuxGs2zeWisNSxMW6hU6Hkj'};await api.refresh(true);assert.equal(verifies,2,'a different pool is verified again');
+ api.search(B);for(let i=0;i<20&&!api.S.candidates.some(c=>c.address===B);i++)await tick();assert.ok(api.S.candidates.some(c=>c.address===B),'search added B');
+ await api.refresh(true);assert.ok(asked.includes(B),'pinned search result is fetched with discovery');assert.ok(api.S.candidates.some(c=>c.address===B),'search result survives the next scan')});
+test('Token-2022 and pool program lookups ignore inherited object keys',async()=>{
+ for(const name of ['constructor','toString','__proto__','hasOwnProperty'])assert.equal(T22.review([{extension:name}],null).status,'BLOCKED',name);
+ const r=await Pools.verifyPool(async()=>({value:{owner:'constructor',data:['','base64']}}),pair(),va);assert.equal(r.status,'FAILED')});
+test('Retry-After is honoured in both seconds and HTTP-date form',async()=>{
+ const h=harness();const run=async v=>{h.ctx.fetch=async()=>({ok:false,status:429,headers:{get:()=>v},json:async()=>({})});try{await h.api.get('https://api.dexscreener.com/x')}catch(e){return e.retryAfter}};
+ assert.equal(await run('30'),30000);const ms=await run(new Date(Date.now()+120000).toUTCString());assert.ok(ms>=118000&&ms<=121000,String(ms));assert.equal(await run('garbage'),undefined)});

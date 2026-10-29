@@ -45,7 +45,8 @@ function createQuoteClient(gate,options){
     var ctx={now:now(),inputMint:args.mint,outputMint:USDC,amount:args.amount,sellUsd:args.sellUsd,markUsd:args.markUsd};
     var url=BASE+'/order?inputMint='+encodeURIComponent(args.mint)+'&outputMint='+USDC+'&amount='+args.amount.toString()+'&slippageBps='+SLIPPAGE_BPS;
     var headers={Accept:'application/json'};if(typeof config.quoteKey==='string'&&config.quoteKey)headers['x-api-key']=config.quoteKey;
-    return gate.run(url,{method:'GET',headers:headers},{ttl:cacheMs}).then(function(r){ctx.now=r.fetchedAt;return parseOrder(r.value,ctx)},function(e){return failed(e,ctx)});
+    // Cooldowns for answers about this mint (no route, 5xx on an unroutable mint) stay on this mint; rate limits still pause the provider.
+    return gate.run(url,{method:'GET',headers:headers},{ttl:cacheMs,healthKey:args.mint}).then(function(r){ctx.now=r.fetchedAt;return parseOrder(r.value,ctx)},function(e){return failed(e,ctx)});
   }
   return {quoteSell:quoteSell};
 }

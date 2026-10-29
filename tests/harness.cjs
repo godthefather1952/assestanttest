@@ -21,4 +21,6 @@ const CPMM='CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',VAULT_A='Fo1Wt8bQhH5fz
 function key(a){let n=0n;for(const ch of a)n=n*58n+BigInt('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'.indexOf(ch));const out=[];while(n>0n){out.unshift(Number(n&255n));n>>=8n}while(out.length<32)out.unshift(0);return out}
 function poolAccount(mint0=A,mint1=C,v0=VAULT_A,v1=VAULT_B){const b=new Uint8Array(637);[[168,mint0],[200,mint1],[72,v0],[104,v1]].forEach(([o,k])=>b.set(key(k),o));return {owner:CPMM,data:[Buffer.from(b).toString('base64'),'base64']}}
 function vaultAccount(mint,amount='1000',owner=C){return {owner:C,data:{parsed:{type:'account',info:{mint,state:'initialized',owner:'AuthAuthAuthAuthAuthAuthAuthAuthAuthAuthAuth1',tokenAmount:{amount}}}}}}
-module.exports={harness,pair,verified,pos,rpcData,A,B,C,POOL,CPMM,VAULT_A,VAULT_B,key,poolAccount,vaultAccount};
+// Approval needs a fresh successful sell quote for the selected size; tests that expect approval set one explicitly.
+function routeOk(api,a=A,size){api.quoteCache[a+':'+(size||api.S.size)]={status:'ROUTE_AVAILABLE',reason:'',quotedAt:Date.now(),amountIn:'1',sellUsd:10,markUsd:10,outUsd:9.9,minOutUsd:9.8,slippageBps:100,priceImpactPct:0,feeBps:null,platformFeeBps:null,router:null,route:[],shortfallPct:1}}
+module.exports={harness,pair,verified,pos,rpcData,routeOk,A,B,C,POOL,CPMM,VAULT_A,VAULT_B,key,poolAccount,vaultAccount};

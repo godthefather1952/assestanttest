@@ -80,28 +80,37 @@ function createRpc(fetcher,options){
   function detailed(method,params){return request(method,params).then(function(result){var m=meta.get(key(method,params))||{};return {result:result,fetchedAt:m.fetchedAt||now(),stale:!!m.stale,endpoint:m.endpoint||null}})}
   return {request:request,detailed:detailed,meta:function(method,params){return meta.get(key(method,params))||null},health:health};
 }
+// Failures that say something about the provider as a whole. Anything else (a 4xx/5xx answer about one request) cools down
+// only that request's key when the caller supplies one, so one bad token cannot pause the provider for every other token.
+var PROVIDER_WIDE={rate_limited:1,blocked:1,network:1,timeout:1};
 // Shared HTTP gate for non-RPC providers: dedupes, caches, paces and cools down after failures.
 function createGate(name,fetcher,options){
   options=options||{};
   var now=options.now||Date.now,wait=options.wait||function(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})},gap=options.gap===undefined?200:options.gap;
-  var cache=new Map(),pending=new Map(),health={},tail=Promise.resolve(),nextAt=0,hk=name;
+  var cache=new Map(),pending=new Map(),health={},requestKeys=new Set(),tail=Promise.resolve(),nextAt=0,hk=name;
+  // Expired request-scoped entries are dropped so the health panel and memory do not grow with every token ever quoted.
+  function prune(t){requestKeys.forEach(function(rk){var h=health[rk];if(!h||h.retryAt+MAX_COOLDOWN<=t){delete health[rk];requestKeys.delete(rk)}})}
   function run(url,opt,settings){
     settings=settings||{};
-    var ttl=settings.ttl||0,k=url+(opt&&opt.body||''),cached=cache.get(k);
+    var ttl=settings.ttl||0,k=url+(opt&&opt.body||''),cached=cache.get(k),rk=settings.healthKey?name+' '+settings.healthKey:null;
     if(cached&&ttl&&now()-cached.time<ttl)return Promise.resolve({value:cached.value,fetchedAt:cached.time,cached:true});
     if(pending.has(k))return pending.get(k);
     var work=tail.then(async function(){
-      var h=cooling(health,hk,now());
-      if(h)throw Error(name+': '+h.message+' (cooldown '+seconds(h.retryAt-now())+'s)');
+      prune(now());
+      var h=cooling(health,hk,now())||(rk&&cooling(health,rk,now()));
+      // A request-scoped cooldown repeats that request's last answer (for example a no-route 400), so it is not misread as an outage.
+      if(h){var cool=Error(name+': '+h.message+' (cooldown '+seconds(h.retryAt-now())+'s)');cool.kind='cooldown';if(rk&&h===health[rk]){cool.status=h.status;cool.body=h.body}throw cool}
       await wait(Math.max(0,nextAt-now()));nextAt=now()+gap;
       try{
         var value=await fetcher(url,opt);
         markSuccess(health,hk,now());
+        if(rk){delete health[rk];requestKeys.delete(rk)}
         cache.set(k,{time:now(),value:value});
         while(cache.size>64)cache.delete(cache.keys().next().value);
         return {value:value,fetchedAt:now(),cached:false};
       }catch(e){
-        var failed=markFailure(health,hk,e,now());
+        var scope=rk&&!PROVIDER_WIDE[classify(e).kind]?rk:hk;if(scope===rk)requestKeys.add(rk);
+        var failed=markFailure(health,scope,e,now());if(scope===rk){failed.status=e&&e.status;failed.body=e&&e.body}
         var error=Error(name+': '+failed.message);error.kind=failed.kind;error.status=e&&e.status;error.body=e&&e.body;throw error;
       }
     });
